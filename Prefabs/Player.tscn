@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3 uid="uid://csoerfwd402g3"]
+
+[ext_resource type="Script" uid="uid://be1pih17o414t" path="res://Scripts/Player/player_controller.gd" id="1_um8lo"]
+[ext_resource type="Script" path="res://Scripts/Player/camera_rotator.gd" id="2_rot"]
+[ext_resource type="Script" path="res://Scripts/Player/player_movement.gd" id="3_mvm"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mmoe8"]
+size = Vector3(0.3, 1.8, 0.3)
+
+[node name="Player" type="CharacterBody3D" unique_id=1680936360]
+script = ExtResource("1_um8lo")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1810509082]
+transform = Transform3D(0.3, 0, 0, 0, 1.8, 0, 0, 0, 0.3, 0, 0.90000004, 0)
+mesh = SubResource("BoxMesh_mmoe8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=734810284]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.90000004, 0)
+shape = SubResource("BoxShape3D_mmoe8")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1529583420]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5914286, 0)
+script = ExtResource("2_rot")
+
+[node name="Node" type="Node" parent="." unique_id=587681766]
+script = ExtResource("3_mvm")
