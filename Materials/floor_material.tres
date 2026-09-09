@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cw2kiqo6ttosi"]
+
+[ext_resource type="Texture2D" uid="uid://brpn275cvp6gf" path="res://Sprites/World/Floor.png" id="1_drhet"]
+
+[resource]
+albedo_texture = ExtResource("1_drhet")
+uv1_scale = Vector3(5, 5, 5)
+uv1_triplanar = true
+uv1_world_triplanar = true

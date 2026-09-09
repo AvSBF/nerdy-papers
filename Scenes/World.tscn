@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://mc4yqo01ompn"]
+
+[ext_resource type="PackedScene" uid="uid://dqijtnyy6b2n8" path="res://Prefabs/Floor.tscn" id="1_5cjrv"]
+
+[sub_resource type="Environment" id="Environment_mmoe8"]
+background_mode = 1
+background_color = Color(0.10384414, 0.12088584, 0.24070558, 1)
+fog_enabled = true
+fog_mode = 1
+fog_density = 1.0
+fog_depth_begin = 0.0
+fog_depth_end = 40.5
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_j0p05"]
+
+[sub_resource type="Compositor" id="Compositor_5nsto"]
+
+[node name="World" type="Node3D" unique_id=533226924]
+
+[node name="Floor" type="Node3D" parent="." unique_id=1762117558]
+
+[node name="Floor" parent="Floor" unique_id=2001025901 instance=ExtResource("1_5cjrv")]
+transform = Transform3D(20, 0, 0, 0, 0.05, 0, 0, 0, 20, 0, 0, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=771962969]
+environment = SubResource("Environment_mmoe8")
+camera_attributes = SubResource("CameraAttributesPractical_j0p05")
+compositor = SubResource("Compositor_5nsto")
