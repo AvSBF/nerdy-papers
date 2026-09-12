@@ -25,7 +25,7 @@ func _physics_process(_delta: float) -> void:
 
 	var move_dir := (right * direction.x + forward * direction.z)
 
-	var speed := controller.move_speed
+	var speed = controller.move_speed
 	if Input.is_action_pressed("sprint"):
 		speed *= controller.sprint_multiplier
 

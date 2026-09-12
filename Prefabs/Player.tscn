@@ -1,8 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://csoerfwd402g3"]
+[gd_scene format=3 uid="uid://csoerfwd402g3"]
 
 [ext_resource type="Script" uid="uid://be1pih17o414t" path="res://Scripts/Player/player_controller.gd" id="1_um8lo"]
-[ext_resource type="Script" path="res://Scripts/Player/camera_rotator.gd" id="2_rot"]
-[ext_resource type="Script" path="res://Scripts/Player/player_movement.gd" id="3_mvm"]
+[ext_resource type="Script" uid="uid://bmmlkl7mwe1us" path="res://Scripts/Player/camera_rotator.gd" id="2_rot"]
+[ext_resource type="Script" uid="uid://db3ysoukmbarx" path="res://Scripts/Player/player_movement.gd" id="3_mvm"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
 
