@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://cxasut8klwf3u"]
+
+[ext_resource type="Material" uid="uid://64fphs2d0vqm" path="res://Materials/table material.tres" id="1_w35vp"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
+size = Vector3(2.6000001, 1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mmoe8"]
+size = Vector3(2.6000001, 1, 1)
+
+[node name="Paper Creating Table" type="Node3D" unique_id=1739078887]
+
+[node name="Table" type="StaticBody3D" parent="." unique_id=851464623]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Table" unique_id=1317907287]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9604645e-08, 0.5, 1.4901161e-08)
+material_override = ExtResource("1_w35vp")
+mesh = SubResource("BoxMesh_mmoe8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Table" unique_id=1142648849]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9802322e-08, 0.5, 0)
+shape = SubResource("BoxShape3D_mmoe8")
+
+[node name="Drop Tube" type="CSGCylinder3D" parent="." unique_id=264846281]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 4.0007324, 0)
+material_override = ExtResource("1_w35vp")
+radius = 0.328
+height = 0.99853516
+
+[node name="Hole" type="CSGCylinder3D" parent="Drop Tube" unique_id=2115868636]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.049999952, 0)
+operation = 2
+radius = 0.269
+height = 0.9
