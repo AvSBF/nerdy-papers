@@ -1,12 +1,30 @@
 [gd_scene format=3 uid="uid://cxasut8klwf3u"]
 
+[ext_resource type="Script" uid="uid://de6kglyiammfn" path="res://Scripts/Paper Creating Table/paper_creator.gd" id="1_sihuc"]
 [ext_resource type="Material" uid="uid://64fphs2d0vqm" path="res://Materials/table material.tres" id="1_w35vp"]
+[ext_resource type="Script" uid="uid://bagogeb27oaed" path="res://Scripts/Paper Creating Table/table_button_press.gd" id="2_qgx16"]
+[ext_resource type="Material" uid="uid://dvd61mygrtte5" path="res://Materials/Table Button Materials/button main material.tres" id="2_w35vp"]
+[ext_resource type="Material" uid="uid://7gevgelxn82f" path="res://Materials/Table Button Materials/button material.tres" id="3_70iv4"]
+[ext_resource type="PackedScene" uid="uid://br2inawhbs2p5" path="res://Prefabs/paper.tscn" id="4_paper"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
 size = Vector3(2.6000001, 1, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_mmoe8"]
 size = Vector3(2.6000001, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_mmoe8"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 0.1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_o5plq"]
+top_radius = 0.22265625
+bottom_radius = 0.22265625
+height = 0.10865478
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_o5plq"]
+size = Vector3(0.6, 0.3, 0.6)
 
 [node name="Paper Creating Table" type="Node3D" unique_id=1739078887]
 
@@ -32,3 +50,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.049999952, 0)
 operation = 2
 radius = 0.269
 height = 0.9
+
+[node name="Button" type="StaticBody3D" parent="." unique_id=1033382256 groups=["button"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 1, 0)
+script = ExtResource("2_qgx16")
+
+[node name="Basis" type="MeshInstance3D" parent="Button" unique_id=49486377]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+material_override = ExtResource("2_w35vp")
+mesh = SubResource("CylinderMesh_mmoe8")
+
+[node name="Moving Part" type="MeshInstance3D" parent="Button" unique_id=623334395]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1543274, 0)
+material_override = ExtResource("3_70iv4")
+mesh = SubResource("CylinderMesh_o5plq")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Button" unique_id=542017332]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9604645e-08, 0.14999998, 0)
+shape = SubResource("BoxShape3D_o5plq")
+
+[node name="Paper Creator" type="Node3D" parent="." unique_id=1823836100]
+script = ExtResource("1_sihuc")
+variation_x = Vector2(-0.129, 0.129)
+variation_y = Vector2(-0.129, 0.129)
+paper_scene = ExtResource("4_paper")
