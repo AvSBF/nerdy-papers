@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://br2inawhbs2p5"]
 
+[ext_resource type="PhysicsMaterial" uid="uid://cadxghvtfycfm" path="res://Physics Material/paper_material.tres" id="1_0214c"]
 [ext_resource type="Script" uid="uid://cv5p3q8m11awd" path="res://Scripts/Paper/paper.gd" id="1_paper"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
@@ -11,6 +12,7 @@ size = Vector3(0.2, 0.034791015, 0.112)
 [node name="Paper" type="RigidBody3D" unique_id=400861797]
 collision_layer = 4
 collision_mask = 5
+physics_material_override = ExtResource("1_0214c")
 script = ExtResource("1_paper")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=910471152]

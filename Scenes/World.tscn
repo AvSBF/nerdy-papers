@@ -42,3 +42,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7072947, 0.025000095, -1.58
 
 [node name="Paper Storage" parent="." unique_id=1837465201 instance=ExtResource("4_storage")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.754945, 0.025000095, -1.580008)
+paper_type = 2

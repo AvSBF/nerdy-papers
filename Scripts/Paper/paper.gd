@@ -1,6 +1,8 @@
 class_name Paper
 extends RigidBody3D
 
+@export var paper_type : int = 1
+
 signal picked_up(paper: Paper)
 
 var _flight_target : Node3D = null
@@ -10,6 +12,9 @@ var _flight_from_basis : Basis = Basis.IDENTITY
 var _flight_progress : float = 0.0
 var _flight_time : float = 0.0
 var _held : bool = false
+
+func get_paper_type() -> int :
+	return paper_type
 
 func pick_up(target: Node3D, flight_time: float) -> void:
 	set_meta("pickup_layer", collision_layer)

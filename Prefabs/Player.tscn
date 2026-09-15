@@ -11,7 +11,7 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_mmoe8"]
 size = Vector3(0.3, 1.8, 0.3)
 
-[node name="Player" type="CharacterBody3D" unique_id=1680936360]
+[node name="Player" type="CharacterBody3D" unique_id=1680936360 groups=["player"]]
 collision_layer = 2
 collision_mask = 1
 script = ExtResource("1_um8lo")
