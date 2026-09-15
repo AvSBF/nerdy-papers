@@ -8,6 +8,7 @@ extends Node3D
 
 func spawn_paper() -> void:
 	var paper := paper_scene.instantiate()
+	paper.add_to_group("paper")
 	add_child(paper)
 	paper.position = _get_random_position()
 

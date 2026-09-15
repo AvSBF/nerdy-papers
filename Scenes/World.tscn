@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://dqijtnyy6b2n8" path="res://Prefabs/Floor.tscn" id="1_5cjrv"]
 [ext_resource type="PackedScene" uid="uid://csoerfwd402g3" path="res://Prefabs/Player.tscn" id="2_j0p05"]
 [ext_resource type="PackedScene" uid="uid://cxasut8klwf3u" path="res://Prefabs/paper_creating_table.tscn" id="3_5nsto"]
+[ext_resource type="PackedScene" uid="uid://bq7w2m5n8k3xa" path="res://Prefabs/paper_storage.tscn" id="4_storage"]
 
 [sub_resource type="Environment" id="Environment_mmoe8"]
 background_mode = 1
@@ -38,3 +39,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53218794, 0.025000572, 2.04
 
 [node name="Paper Creating Table" parent="." unique_id=1739078887 instance=ExtResource("3_5nsto")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7072947, 0.025000095, -1.580008)
+
+[node name="Paper Storage" parent="." unique_id=1837465201 instance=ExtResource("4_storage")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.754945, 0.025000095, -1.580008)
