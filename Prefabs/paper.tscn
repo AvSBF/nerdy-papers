@@ -1,17 +1,22 @@
 [gd_scene format=3 uid="uid://br2inawhbs2p5"]
 
+[ext_resource type="Script" uid="uid://cv5p3q8m11awd" path="res://Scripts/Paper/paper.gd" id="1_paper"]
+
 [sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
-size = Vector3(0.2, 0.020507813, 0.112219244)
+size = Vector3(0.2, 0.03564453, 0.112219244)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_22reo"]
-size = Vector3(0.2, 0.021, 0.112)
+size = Vector3(0.2, 0.034791015, 0.112)
 
 [node name="Paper" type="RigidBody3D" unique_id=400861797]
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("1_paper")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=910471152]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.017568357, 0)
 mesh = SubResource("BoxMesh_mmoe8")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2054380801]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01010501, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.017000519, 0)
 shape = SubResource("BoxShape3D_22reo")
