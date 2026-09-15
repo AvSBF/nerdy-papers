@@ -5,6 +5,8 @@ extends RigidBody3D
 
 signal picked_up(paper: Paper)
 
+const KILL_Y : float = -0.5
+
 @onready var type_label : Label3D = $TypeLabel
 
 func _ready() -> void:
@@ -54,6 +56,10 @@ func drop(throw_velocity: Vector3) -> void:
 	linear_velocity = throw_velocity
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	if global_position.y < KILL_Y:
+		print("найдена бумага под полом, удаление")
+		queue_free()
+		return
 	if _flight_target != null:
 		_flight_progress = minf(_flight_progress + state.step / _flight_time, 1.0)
 		var t := ease(_flight_progress, 0.5)

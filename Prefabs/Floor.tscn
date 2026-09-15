@@ -4,10 +4,12 @@
 [ext_resource type="BoxMesh" uid="uid://ddhvutp8kw75x" path="res://Meshes/floor_box_mesh.tres" id="2_dff1c"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_mmoe8"]
+size = Vector3(1, 39.0084, 1)
 
 [node name="Floor" type="StaticBody3D" unique_id=2001025901]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=36622416]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -19.004198, 0)
 shape = SubResource("BoxShape3D_mmoe8")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1698026530]
