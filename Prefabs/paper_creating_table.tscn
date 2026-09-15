@@ -54,6 +54,7 @@ height = 0.9
 [node name="Button" type="StaticBody3D" parent="." unique_id=1033382256 groups=["button"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 1, 0)
 script = ExtResource("2_qgx16")
+wait_time = 0.1
 
 [node name="Basis" type="MeshInstance3D" parent="Button" unique_id=49486377]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
@@ -71,6 +72,6 @@ shape = SubResource("BoxShape3D_o5plq")
 
 [node name="Paper Creator" type="Node3D" parent="." unique_id=1823836100]
 script = ExtResource("1_sihuc")
+paper_scene = ExtResource("4_paper")
 variation_x = Vector2(-0.129, 0.129)
 variation_y = Vector2(-0.129, 0.129)
-paper_scene = ExtResource("4_paper")

@@ -22,3 +22,10 @@ mesh = SubResource("BoxMesh_mmoe8")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2054380801]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.017000519, 0)
 shape = SubResource("BoxShape3D_22reo")
+
+[node name="TypeLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 0)
+billboard = 1
+text = "1"
+font_size = 32
+outline_size = 8

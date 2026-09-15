@@ -5,6 +5,12 @@ extends RigidBody3D
 
 signal picked_up(paper: Paper)
 
+@onready var type_label : Label3D = $TypeLabel
+
+func _ready() -> void:
+	type_label.text = str(paper_type)
+	type_label.visible = false
+
 var _flight_target : Node3D = null
 var _hold_point : Node3D = null
 var _flight_from : Vector3 = Vector3.ZERO
@@ -40,6 +46,7 @@ func drop(throw_velocity: Vector3) -> void:
 	_held = false
 	_hold_point = null
 	_flight_target = null
+	type_label.visible = false
 	gravity_scale = 1.0
 	can_sleep = true
 	collision_layer = get_meta("pickup_layer", 1)
@@ -61,6 +68,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if _flight_progress >= 1.0:
 			_held = true
 			_flight_target = null
+			type_label.visible = true
 			picked_up.emit(self)
 	elif _held and _hold_point != null:
 		state.transform = _hold_point.global_transform

@@ -36,6 +36,7 @@ size = Vector3(0.8, 0.6, 1)
 script = ExtResource("1_storage")
 
 [node name="Bin" type="StaticBody3D" parent="." unique_id=1049283715]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0, 0)
 collision_mask = 0
 
 [node name="Floor" type="MeshInstance3D" parent="Bin" unique_id=1657483920]
@@ -84,24 +85,25 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0.57)
 shape = SubResource("BoxShape3D_wall_z")
 
 [node name="LidBack" type="MeshInstance3D" parent="Bin" unique_id=1746352819]
-transform = Transform3D(1, 0, 0, 0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 0, 0.95, -0.3)
+transform = Transform3D(1, 0, 0, 0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 0, 1.1571229, -0.729556)
 material_override = SubResource("StandardMaterial3D_bin")
 mesh = SubResource("BoxMesh_lid")
 
 [node name="LidBackShape" type="CollisionShape3D" parent="Bin" unique_id=1920384760]
-transform = Transform3D(1, 0, 0, 0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 0, 0.95, -0.3)
+transform = Transform3D(1, 0, 0, 0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 0, 1.158355, -0.73027194)
 shape = SubResource("BoxShape3D_lid")
 
 [node name="LidFront" type="MeshInstance3D" parent="Bin" unique_id=1920384761]
-transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 0.95, 0.3)
+transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 1.1514492, 0.73234355)
 material_override = SubResource("StandardMaterial3D_bin")
 mesh = SubResource("BoxMesh_lid")
 
 [node name="LidFrontShape" type="CollisionShape3D" parent="Bin" unique_id=1920384762]
-transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 0.95, 0.3)
+transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 1.1521908, 0.73266715)
 shape = SubResource("BoxShape3D_lid")
 
 [node name="DetectArea" type="Area3D" parent="." unique_id=1783946503]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0, 0)
 collision_layer = 0
 collision_mask = 4
 
@@ -114,4 +116,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 billboard = 1
 text = "0"
 font_size = 48
+outline_size = 8
+
+[node name="TypeLabel" type="Label3D" parent="." unique_id=249901038]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+billboard = 1
+text = "1"
 outline_size = 8

@@ -2,6 +2,7 @@ extends Node3D
 
 @onready var detect_area : Area3D = $DetectArea
 @onready var count_label : Label3D = $CountLabel
+@onready var type_label : Label3D = $TypeLabel
 
 @export var paper_type : int = 1
 @export var throw_speed : float = 10.0
@@ -10,6 +11,7 @@ var count : int = 0
 
 func _ready() -> void:
 	detect_area.body_entered.connect(_on_body_entered)
+	type_label.text = str(paper_type)
 	_update_label()
 
 func _on_body_entered(body: Node3D) -> void:

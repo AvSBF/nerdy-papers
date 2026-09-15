@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://be1pih17o414t" path="res://Scripts/Player/player_controller.gd" id="1_um8lo"]
 [ext_resource type="Script" uid="uid://bmmlkl7mwe1us" path="res://Scripts/Player/camera_rotator.gd" id="2_rot"]
 [ext_resource type="Script" uid="uid://db3ysoukmbarx" path="res://Scripts/Player/player_movement.gd" id="3_mvm"]
-[ext_resource type="Script" uid="uid://cq4t7w2m9p8xa" path="res://Scripts/Player/player_interactor.gd" id="4_int"]
-[ext_resource type="Script" uid="uid://bx7k2v9nq3m5a" path="res://Scripts/UI/interaction_prompt.gd" id="5_ui"]
+[ext_resource type="Script" uid="uid://cq4t7w2nap8xa" path="res://Scripts/Player/player_interactor.gd" id="4_int"]
+[ext_resource type="Script" uid="uid://bx7k2wanq3m5a" path="res://Scripts/UI/interaction_prompt.gd" id="5_ui"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
 
@@ -13,7 +13,6 @@ size = Vector3(0.3, 1.8, 0.3)
 
 [node name="Player" type="CharacterBody3D" unique_id=1680936360 groups=["player"]]
 collision_layer = 2
-collision_mask = 1
 script = ExtResource("1_um8lo")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1810509082]
@@ -40,8 +39,22 @@ script = ExtResource("4_int")
 [node name="UI" type="CanvasLayer" parent="." unique_id=2145990167]
 script = ExtResource("5_ui")
 
-[node name="Label" type="Label" parent="UI"]
+[node name="Crosshair" type="ColorRect" parent="UI" unique_id=1484145784]
 anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="UI" unique_id=1285730884]
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5

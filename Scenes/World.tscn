@@ -11,9 +11,10 @@ background_color = Color(0.10384414, 0.12088584, 0.24070558, 1)
 ambient_light_color = Color(1, 1, 1, 1)
 fog_enabled = true
 fog_mode = 1
+fog_light_color = Color(0.092545725, 0.10477363, 0.12380075, 1)
 fog_density = 1.0
 fog_depth_begin = 0.0
-fog_depth_end = 40.5
+fog_depth_end = 10.0
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_j0p05"]
 
@@ -41,5 +42,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53218794, 0.025000572, 2.04
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7072947, 0.025000095, -1.580008)
 
 [node name="Paper Storage" parent="." unique_id=1837465201 instance=ExtResource("4_storage")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.754945, 0.025000095, -1.580008)
+transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, -2.245055, 0.025000095, 5.419992)
+
+[node name="Paper Storage2" parent="." unique_id=758220714 instance=ExtResource("4_storage")]
+transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, -0.24505496, 0.025000095, 5.419992)
 paper_type = 2
+
+[node name="Paper Storage3" parent="." unique_id=454407692 instance=ExtResource("4_storage")]
+transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, 1.754945, 0.025000095, 5.419992)
+paper_type = 3
+
+[node name="Paper Storage4" parent="." unique_id=743524894 instance=ExtResource("4_storage")]
+transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, 3.754945, 0.025000095, 5.419992)
+paper_type = 4
