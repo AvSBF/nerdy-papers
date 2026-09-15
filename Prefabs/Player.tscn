@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://be1pih17o414t" path="res://Scripts/Player/player_controller.gd" id="1_um8lo"]
 [ext_resource type="Script" uid="uid://bmmlkl7mwe1us" path="res://Scripts/Player/camera_rotator.gd" id="2_rot"]
 [ext_resource type="Script" uid="uid://db3ysoukmbarx" path="res://Scripts/Player/player_movement.gd" id="3_mvm"]
+[ext_resource type="Script" uid="uid://cq4t7w2m9p8xa" path="res://Scripts/Player/player_interactor.gd" id="4_int"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
 
@@ -26,3 +27,6 @@ script = ExtResource("2_rot")
 
 [node name="Node" type="Node" parent="." unique_id=587681766]
 script = ExtResource("3_mvm")
+
+[node name="Interactor" type="Node" parent="." unique_id=1427895630]
+script = ExtResource("4_int")
