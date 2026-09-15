@@ -6,6 +6,10 @@ extends Node3D
 
 @export var paper_type : int = 1
 @export var throw_speed : float = 10.0
+@export var plus_one_label_scene : PackedScene
+@export var label_spawn_position : Vector3 = Vector3(0, 2, 0)
+
+const LABEL_MOVE_TIME : float = 0.6
 
 var count : int = 0
 
@@ -22,8 +26,34 @@ func _on_body_entered(body: Node3D) -> void:
 		count += 1
 		body.queue_free()
 		_update_label()
+		_spawn_plus_one_label()
 	else:
 		_throw_toward_player(body)
+
+func _spawn_plus_one_label() -> void:
+	if plus_one_label_scene == null:
+		return
+	var label := plus_one_label_scene.instantiate()
+	label.position = label_spawn_position
+	label.scale = Vector3.ZERO
+	add_child(label)
+
+	var target_offset := Vector3(
+		randf_range(-0.1, 0.1),
+		randf_range(0.1, 0.2),
+		0.0
+	)
+	var target_position := label_spawn_position + target_offset
+	label.rotation.z = atan2(target_offset.x, target_offset.y)
+
+	var anim_player := label.get_node("AnimationPlayer") as AnimationPlayer
+	anim_player.play("+1 label appear")
+
+	var move_tween := create_tween()
+	move_tween.tween_property(label, "position", target_position, LABEL_MOVE_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	await anim_player.animation_finished
+	label.queue_free()
 
 func _update_label() -> void:
 	count_label.text = str(count)
