@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://bcdkmwvhqb7qf"]
+
+[ext_resource type="Script" path="res://Scripts/UI/debug_menu.gd" id="1_debug"]
+
+[node name="DebugMenu" type="CanvasLayer"]
+script = ExtResource("1_debug")
+
+[node name="Panel" type="PanelContainer" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 300.0
+offset_bottom = 150.0
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+theme_override_constants/separation = 6
+
+[node name="SpawnRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+
+[node name="SpawnCountSlider" type="HSlider" parent="Panel/Margin/VBox/SpawnRow"]
+custom_minimum_size = Vector2(120, 0)
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 1000.0
+step = 1.0
+value = 10.0
+
+[node name="SpawnCountValue" type="Label" parent="Panel/Margin/VBox/SpawnRow"]
+custom_minimum_size = Vector2(34, 0)
+text = "10"
+
+[node name="SpawnButton" type="Button" parent="Panel/Margin/VBox/SpawnRow"]
+text = "Спавн"
+
+[node name="MaxHeldRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+
+[node name="MaxHeldSlider" type="HSlider" parent="Panel/Margin/VBox/MaxHeldRow"]
+custom_minimum_size = Vector2(120, 0)
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 10.0
+step = 1.0
+value = 1.0
+
+[node name="MaxHeldValue" type="Label" parent="Panel/Margin/VBox/MaxHeldRow"]
+custom_minimum_size = Vector2(34, 0)
+text = "1"
+
+[node name="DeleteButton" type="Button" parent="Panel/Margin/VBox"]
+text = "Удалить все бумажки"
