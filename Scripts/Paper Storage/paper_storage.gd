@@ -7,9 +7,11 @@ extends Node3D
 @export var paper_type : int = 1
 @export var throw_speed : float = 10.0
 @export var plus_one_label_scene : PackedScene
-@export var label_spawn_position : Vector3 = Vector3(0, 2, 0)
+@export var label_spawn_position : Vector3 = Vector3(0, 1.75, 0)
 
 const LABEL_MOVE_TIME : float = 0.6
+const LABEL_HOLD_TIME : float = 1.0
+const LABEL_FADE_TIME : float = 0.3
 
 var count : int = 0
 
@@ -53,6 +55,11 @@ func _spawn_plus_one_label() -> void:
 	move_tween.tween_property(label, "position", target_position, LABEL_MOVE_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 	await anim_player.animation_finished
+	await get_tree().create_timer(LABEL_HOLD_TIME).timeout
+
+	var fade_tween := create_tween()
+	fade_tween.tween_property(label, "modulate:a", 0.0, LABEL_FADE_TIME)
+	await fade_tween.finished
 	label.queue_free()
 
 func _update_label() -> void:

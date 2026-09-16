@@ -16,8 +16,6 @@ func interact():
 
 	moving_part.position.y = minimum_position
 	creator.spawn_paper()
-	for i in range(100):
-		creator.spawn_paper()
 	await get_tree().create_timer(wait_time).timeout
 
 	moving_part.position.y = initial_position
