@@ -10,7 +10,7 @@ func _ready() -> void:
 	label.hide()
 
 func _update_prompt(_arg: Variant = null) -> void:
-	if interactor.held_paper != null:
+	if not interactor.held_papers.is_empty():
 		label.text = "[G] to throw"
 		label.show()
 		return

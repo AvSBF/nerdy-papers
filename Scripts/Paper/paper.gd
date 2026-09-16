@@ -20,6 +20,13 @@ var _flight_from_basis : Basis = Basis.IDENTITY
 var _flight_progress : float = 0.0
 var _flight_time : float = 0.0
 var _held : bool = false
+var hold_offset : Vector3 = Vector3.ZERO
+var show_label_while_held : bool = true
+
+func set_show_label_while_held(value: bool) -> void:
+	show_label_while_held = value
+	if _held:
+		type_label.visible = value
 
 func get_paper_type() -> int :
 	return paper_type
@@ -48,6 +55,7 @@ func drop(throw_velocity: Vector3) -> void:
 	_held = false
 	_hold_point = null
 	_flight_target = null
+	show_label_while_held = true
 	type_label.visible = false
 	gravity_scale = 1.0
 	can_sleep = true
@@ -64,8 +72,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		_flight_progress = minf(_flight_progress + state.step / _flight_time, 1.0)
 		var t := ease(_flight_progress, 0.5)
 
+		var target_pos := _flight_target.global_position + _flight_target.global_basis * hold_offset
 		var tform := state.transform
-		tform.origin = _flight_from.lerp(_flight_target.global_position, t)
+		tform.origin = _flight_from.lerp(target_pos, t)
 		tform.basis = _flight_from_basis.slerp(_flight_target.global_basis, t)
 		state.transform = tform
 		state.linear_velocity = Vector3.ZERO
@@ -74,9 +83,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if _flight_progress >= 1.0:
 			_held = true
 			_flight_target = null
-			type_label.visible = true
+			type_label.visible = show_label_while_held
 			picked_up.emit(self)
 	elif _held and _hold_point != null:
-		state.transform = _hold_point.global_transform
+		var tform := _hold_point.global_transform
+		tform.origin += _hold_point.global_basis * hold_offset
+		state.transform = tform
 		state.linear_velocity = Vector3.ZERO
 		state.angular_velocity = Vector3.ZERO

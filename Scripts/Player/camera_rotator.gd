@@ -6,6 +6,8 @@ var pitch : float = 0.0
 @onready var controller : Node = player
 
 func _unhandled_input(event: InputEvent) -> void:
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
 	if event is InputEventMouseMotion:
 		var motion : InputEventMouseMotion = event as InputEventMouseMotion
 
