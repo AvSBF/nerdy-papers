@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nerdy Papers — учебник по Godot для Unity-разработчика</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+
+    <section class="hero">
+      <div class="chapter-kicker">УЧЕБНИК ПО ТЕКУЩЕМУ ПРОЕКТУ</div>
+      <h1>Godot за 9 глав — на примере Nerdy Papers</h1>
+      <p class="lead">
+        Ты знаешь Unity. Это отличная база: почти всему в Godot есть прямая аналогия.
+        Здесь мы не учим «программирование с нуля», а переводим твои знания и сразу
+        разбираем настоящий код этой игры — движение от первого лица, физику бумажек,
+        взаимодействие и UI.
+      </p>
+      <div class="badge-row">
+        <span>Godot 4.7</span>
+        <span>GDScript</span>
+        <span>Jolt Physics</span>
+        <span>Forward+</span>
+      </div>
+    </section>
+
+    <h2 id="progress">Твой прогресс</h2>
+    <div class="progress-bar"><i></i></div>
+    <p id="progress-label" class="muted">0 из 9 глав пройдено (0%)</p>
+    <p class="muted">
+      Отмечай изученные разделы галочкой в заголовке раздела, а главу — галочкой слева или
+      внизу страницы. Прогресс сохраняется в браузере. Разделы можно сворачивать кликом по
+      заголовку.
+    </p>
+
+    <h2 id="chapters">Главы</h2>
+    <div class="chapter-grid" id="chapter-grid"></div>
+
+    <h2 id="mapping">Шпаргалка: Unity → Godot</h2>
+    <p>
+      Держи эту таблицу под рукой. Она покрывает 90% того, что ты будешь искать
+      по привычке из Unity.
+    </p>
+    <table>
+      <thead>
+        <tr><th>В Unity</th><th>В Godot</th><th>Комментарий</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>GameObject</td><td><code>Node</code></td><td>Базовый строительный блок сцены.</td></tr>
+        <tr><td>Component</td><td>Тип узла</td><td>В Godot функциональность даёт сам тип узла, а не навешиваемый компонент.</td></tr>
+        <tr><td>Transform</td><td><code>Node3D</code></td><td>Узел, который умеет position/rotation/scale.</td></tr>
+        <tr><td>Prefab</td><td>Сцена <code>.tscn</code> + <code>PackedScene</code></td><td>Обычная сцена, которую можно вставлять в другие.</td></tr>
+        <tr><td>MonoBehaviour</td><td>Скрипт на узле</td><td>Один скрипт = один узел (<code>extends Node</code>).</td></tr>
+        <tr><td><code>Start()</code></td><td><code>_ready()</code></td><td>Вызывается, когда узел и дети готовы.</td></tr>
+        <tr><td><code>Update()</code></td><td><code>_process(delta)</code></td><td>Каждый кадр.</td></tr>
+        <tr><td><code>FixedUpdate()</code></td><td><code>_physics_process(delta)</code></td><td>Фиксированный шаг физики.</td></tr>
+        <tr><td><code>OnCollisionEnter</code></td><td>сигнал <code>body_entered</code></td><td>Сигналы вместо коллбеков.</td></tr>
+        <tr><td>C# <code>event</code> / UnityEvent</td><td><code>signal</code></td><td><code>connect()</code>, <code>emit()</code>, <code>await</code>.</td></tr>
+        <tr><td><code>[SerializeField]</code></td><td><code>@export</code></td><td>Показывает переменную в инспекторе.</td></tr>
+        <tr><td><code>GetComponent&lt;T&gt;()</code></td><td><code>get_node()</code> / <code>@onready</code></td><td>Ссылки на узлы, а не на компоненты.</td></tr>
+        <tr><td><code>Instantiate(prefab)</code></td><td><code>packed.instantiate()</code></td><td>Потом обязательно <code>add_child()</code>.</td></tr>
+        <tr><td>Coroutine</td><td><code>await</code></td><td>Ждём сигнал или таймер.</td></tr>
+        <tr><td>ScriptableObject</td><td><code>Resource</code></td><td>Данные, которые живут отдельно от сцены.</td></tr>
+        <tr><td><code>Time.deltaTime</code></td><td><code>delta</code></td><td>Приходит параметром в <code>_process</code>.</td></tr>
+        <tr><td><code>Input.GetAxis</code></td><td><code>Input.get_axis()</code></td><td>Оси задаются в настройках проекта.</td></tr>
+        <tr><td>Tags</td><td>Группы узлов</td><td><code>add_to_group()</code> / <code>is_in_group()</code>.</td></tr>
+        <tr><td>Layers</td><td>Collision Layer / Mask</td><td>Битовые маски у тел и <code>Area3D</code>.</td></tr>
+        <tr><td>Rigidbody</td><td><code>RigidBody3D</code></td><td>Полноценная физика.</td></tr>
+        <tr><td>CharacterController</td><td><code>CharacterBody3D</code></td><td>Кинематическое движение.</td></tr>
+        <tr><td><code>Debug.Log</code></td><td><code>print()</code></td><td>Вывод в консоль редактора.</td></tr>
+        <tr><td>Camera.main</td><td>активная <code>Camera3D</code></td><td><code>get_viewport().get_camera_3d()</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout unity">
+      <div class="callout-title">Главное отличие в голове</div>
+      <p>
+        Unity строится вокруг <b>компонентов</b>: пустой GameObject, на который ты навешиваешь
+        поведение. Godot строится вокруг <b>дерева специализированных узлов</b>: сам узел
+        уже умеет то, что тебе нужно (<code>Camera3D</code> — это камера, <code>RigidBody3D</code> —
+        это физическое тело). Ты не «собираешь» объект из компонентов — ты выбираешь правильные
+        узлы и расставляешь их иерархией.
+      </p>
+    </div>
+
+    <h2 id="howto">Как проходить</h2>
+    <ol>
+      <li>Открой Godot и держи проект <b>Nerdy Papers</b> открытым рядом.</li>
+      <li>Читай главу, смотри на интерактивные схемы — они показывают, что происходит в коде.</li>
+      <li>Найди упомянутый файл в проекте и сопоставь строки.</li>
+      <li>Отмечай изученные разделы галочкой в заголовке — прогресс главы и курса обновляется сам.</li>
+      <li>Сворачивай разделы кликом по заголовку или по шеврону, чтобы не терять контекст.</li>
+      <li>Пройди квиз в конце и отметь главу галочкой.</li>
+    </ol>
+
+    <div class="callout tip">
+      <div class="callout-title">Совет</div>
+      <p>
+        Все примеры кода — это <b>реальный код твоего проекта</b>. Файлы лежат в
+        <code>Scripts/</code>, сцены — в <code>Scenes/</code> и <code>Prefabs/</code>.
+        Кнопка «Копировать» в блоках кода пригодится, когда будешь экспериментировать.
+      </p>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+</body>
+</html>

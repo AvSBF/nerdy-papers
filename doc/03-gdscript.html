@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03. GDScript и сигналы — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="03-gdscript">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 03</div>
+    <h1>GDScript и сигналы</h1>
+    <p class="lead">
+      GDScript — это Python-подобный язык, встроенный в Godot. Он читается почти как
+      псевдокод, но при этом типизируется. А сигналы заменяют C#-события и UnityEvent.
+    </p>
+
+    <h2 id="syntax">Синтаксис за 5 минут</h2>
+    <p>Если ты писал на Python или C# — вот главные правила:</p>
+    <ul>
+      <li>Вместо <code>{ }</code> — <b>отступы табами</b>. Один блок = один уровень отступа.</li>
+      <li>Переменная: <code>var speed := 5.0</code> (тип выведется) или <code>var speed: float = 5.0</code>.</li>
+      <li>Константа: <code>const KILL_Y: float = -0.5</code>.</li>
+      <li>Функция: <code>func name(arg: Type) -> ReturnType:</code>.</li>
+      <li>Нет <code>new</code> и нет <code>;</code> в конце строк.</li>
+      <li>Комментарий — <code>#</code>.</li>
+    </ul>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper/paper.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">class_name Paper
+extends RigidBody3D
+
+@export var paper_type : int = 1
+
+signal picked_up(paper: Paper)
+
+const KILL_Y : float = -0.5
+
+@onready var type_label : Label3D = $TypeLabel
+
+func get_paper_type() -> int :
+	return paper_type</code></pre>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        <code>class_name Paper</code> регистрирует глобальное имя класса — теперь <code>Paper</code>
+        можно использовать как тип в других скриптах, как обычный класс C#. Без
+        <code>class_name</code> скрипт всё равно работает, но на него нельзя ссылаться по имени.
+      </p>
+    </div>
+
+    <h2 id="export">@export и @onready</h2>
+    <p>Две аннотации, которые ты будешь использовать постоянно.</p>
+
+    <div class="grid">
+      <div class="card">
+        <span class="tag">@export</span>
+        <h4>Показать в инспекторе</h4>
+        <p>Прямой аналог <code>[SerializeField]</code> (и public-полей Unity). Значение задаётся в редакторе и видно в инспекторе.</p>
+      </div>
+      <div class="card">
+        <span class="tag">@onready</span>
+        <h4>Ссылка на узел</h4>
+        <p>Переменная инициализируется прямо перед <code>_ready()</code>, когда дети уже существуют. Заменяет <code>GetComponent</code> и поиск в <code>Start()</code>.</p>
+      </div>
+    </div>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/player_interactor.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@export var interaction_distance : float = 3.0
+@export var throw_speed : float = 5.0
+@export_flags_3d_physics var interaction_mask : int = 0xFFFFFFFF
+
+@onready var player : CharacterBody3D = get_parent()
+@onready var camera : Camera3D = player.get_node("Camera3D")
+@onready var hold_point : Node3D = camera.get_node("HoldPoint")</code></pre>
+    </div>
+
+    <p>
+      <code>$TypeLabel</code> — сокращение для <code>get_node("TypeLabel")</code>. Так берут дочерний узел
+      по имени. Путь можно писать и глубже: <code>$"Moving Part"</code> (в кавычках, если есть пробел).
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Creating Table/table_button_press.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@onready var moving_part : MeshInstance3D = $"Moving Part"
+@onready var creator : Node3D = get_parent().get_node("Paper Creator")</code></pre>
+    </div>
+
+    <h2 id="lifecycle">Жизненный цикл узла</h2>
+    <p>Это прямые аналоги сообщений Unity, но имена другие:</p>
+    <table>
+      <thead><tr><th>GDScript</th><th>Unity</th><th>Когда вызывается</th></tr></thead>
+      <tbody>
+        <tr><td><code>_ready()</code></td><td><code>Start()</code></td><td>Один раз, когда узел и его дети готовы.</td></tr>
+        <tr><td><code>_process(delta)</code></td><td><code>Update()</code></td><td>Каждый кадр.</td></tr>
+        <tr><td><code>_physics_process(delta)</code></td><td><code>FixedUpdate()</code></td><td>С фиксированным шагом физики.</td></tr>
+        <tr><td><code>_unhandled_input(event)</code></td><td>—</td><td>Ввод, который не поглотил UI.</td></tr>
+        <tr><td><code>_input(event)</code></td><td><code>OnGUI</code>-подобное</td><td>Ввод раньше остальных.</td></tr>
+        <tr><td><code>_integrate_forces(state)</code></td><td><code>FixedUpdate</code> у Rigidbody</td><td>Прямое управление физическим телом.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <div class="callout-title">Запомни</div>
+      <p>
+        Двигать <code>CharacterBody3D</code> нужно в <code>_physics_process</code>, а не в
+        <code>_process</code>. Именно так сделано в <code>player_movement.gd</code>.
+      </p>
+    </div>
+
+    <h2 id="signals">Сигналы</h2>
+    <p>
+      Сигнал — это встроенное в язык событие. Три действия: <b>объявить</b>, <b>подключить</b>
+      обработчик и <b>испустить</b>.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Объявление и испускание — paper.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">signal picked_up(paper: Paper)
+
+# ... где-то внутри _integrate_forces:
+_held = true
+_flight_target = null
+type_label.visible = show_label_while_held
+picked_up.emit(self)</code></pre>
+    </div>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Подключение — player_interactor.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">body.picked_up.connect(_on_paper_picked_up, CONNECT_ONE_SHOT)
+
+# обработчик получает то, что передали в emit:
+func _on_paper_picked_up(paper: Paper) -> void:
+	if _flying_paper != paper:
+		return
+	_flying_paper = null
+	held_papers.append(paper)</code></pre>
+    </div>
+
+    <p>
+      <code>CONNECT_ONE_SHOT</code> — как «одноразовая подписка»: обработчик отключится сам
+      после первого срабатывания.
+    </p>
+
+    <h3 id="await">await: корутины по-годотовски</h3>
+    <p>
+      <code>await</code> приостанавливает функцию, пока не сработает сигнал или таймер.
+      Это аналог <code>yield return</code> в C#.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Creating Table/table_button_press.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func interact():
+	if _is_pressed:
+		return
+	_is_pressed = true
+
+	moving_part.position.y = minimum_position
+	creator.spawn_paper()
+	await get_tree().create_timer(wait_time).timeout
+
+	moving_part.position.y = initial_position
+	_is_pressed = false</code></pre>
+    </div>
+
+    <h2 id="demo">Интерактив: как бежит сигнал</h2>
+    <p>Нажми кнопку и посмотри, как сигнал проходит от бумаги к игроку и интерфейсу.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>signal picked_up → connect()</span></div>
+      <div class="demo-body">
+        <canvas id="signal-canvas" data-h="240"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="emit-btn">paper.picked_up.emit(self)</button>
+          <button type="button" id="one-shot-btn">Вкл/выкл CONNECT_ONE_SHOT</button>
+        </div>
+        <div class="demo-readout" id="signal-log">Готово. Нажми кнопку emit.</div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Чем заменить <code>GetComponent&lt;Camera3D&gt;()</code> в GDScript?</p>
+      <button class="opt" data-correct="true" data-explain="Например: @onready var camera: Camera3D = player.get_node(\"Camera3D\"). Это ссылка на узел, а не на компонент.">@onready var camera := player.get_node("Camera3D")</button>
+      <button class="opt" data-explain="get_component() не существует.">get_component("Camera3D")</button>
+      <button class="opt" data-explain="FindChild ищет по имени, но тип Camera3D так не получить корректно.">find_child("Camera3D")</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Что делает <code>picked_up.emit(self)</code>?</p>
+      <button class="opt" data-explain="Это не вывод в консоль.">Печатает сообщение в консоль</button>
+      <button class="opt" data-correct="true" data-explain="emit() вызывает все подключённые через connect() обработчики и передаёт им self.">Вызывает все подключённые к сигналу обработчики</button>
+      <button class="opt" data-explain="Сигнал объявляется один раз, а не при каждом вызове.">Объявляет новый сигнал picked_up</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Что делает <code>await get_tree().create_timer(0.3).timeout</code>?</p>
+      <button class="opt" data-correct="true" data-explain="Функция приостанавливается на 0.3 секунды, затем продолжается с того же места — как корутина.">Приостанавливает функцию на 0.3 сек, затем продолжает</button>
+      <button class="opt" data-explain="Это не блокировка всего движка — ждёт только эта функция.">Замораживает игру на 0.3 секунды</button>
+      <button class="opt" data-explain="Таймер не влияет на физику напрямую.">Меняет шаг физики на 0.3 секунды</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-03">
+      <label for="done-03">Я разобрался с главой 03 — GDScript и сигналы</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("signal-canvas");
+  var emitBtn = document.getElementById("emit-btn");
+  var oneShotBtn = document.getElementById("one-shot-btn");
+  var log = document.getElementById("signal-log");
+  if (!canvas || !emitBtn) return;
+
+  var view = NP.fitCanvas(canvas);
+  var oneShot = true;
+  var connected = true;
+  var flight = null;
+
+  var nodes = [
+    { id: "paper", label: "Paper", sub: "RigidBody3D", x: 0.14, color: NP.COLORS.orange },
+    { id: "interactor", label: "Interactor", sub: "_on_paper_picked_up()", x: 0.5, color: NP.COLORS.accent2 },
+    { id: "ui", label: "UI", sub: "held_paper_changed", x: 0.86, color: NP.COLORS.green }
+  ];
+
+  function boxPos(n) {
+    return { x: n.x * view.w, y: view.h * 0.46 };
+  }
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+
+    // провода
+    for (var i = 0; i < nodes.length - 1; i++) {
+      var a = boxPos(nodes[i]);
+      var b = boxPos(nodes[i + 1]);
+      var active = (i === 0 && flight) || (i === 1 && flight && flight.phase >= 1);
+      ctx.strokeStyle = active ? NP.COLORS.yellow : "#26313d";
+      ctx.lineWidth = 2;
+      ctx.setLineDash(active ? [] : [5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(a.x + 62, a.y);
+      ctx.lineTo(b.x - 62, b.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = active ? NP.COLORS.yellow : "#3a4a5a";
+      ctx.font = "11px monospace";
+      ctx.fillText(i === 0 ? "connect()" : "connect()", (a.x + b.x) / 2 - 26, a.y - 10);
+    }
+
+    nodes.forEach(function (n, idx) {
+      var p = boxPos(n);
+      var lit = flight && (
+        (idx === 0) ||
+        (idx === 1 && flight.phase >= 1) ||
+        (idx === 2 && flight.phase >= 2)
+      );
+      ctx.fillStyle = lit ? "rgba(255,255,255,0.04)" : "#0f1620";
+      ctx.strokeStyle = lit ? n.color : "#26313d";
+      ctx.lineWidth = lit ? 2 : 1.5;
+      roundRect(ctx, p.x - 62, p.y - 34, 124, 68, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = n.color;
+      ctx.font = "bold 13px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText(n.label, p.x, p.y - 8);
+      ctx.fillStyle = NP.COLORS.muted;
+      ctx.font = "10px monospace";
+      ctx.fillText(n.sub, p.x, p.y + 12);
+      ctx.textAlign = "left";
+    });
+
+    if (flight) {
+      var t = flight.t;
+      var from = boxPos(nodes[flight.phase]);
+      var to = boxPos(nodes[flight.phase + 1]);
+      var px = (from.x + 62) + ((to.x - 62) - (from.x + 62)) * t;
+      ctx.fillStyle = NP.COLORS.yellow;
+      ctx.beginPath();
+      ctx.arc(px, from.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = NP.COLORS.yellow;
+      ctx.shadowBlur = 14;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  emitBtn.addEventListener("click", function () {
+    if (flight) return;
+    if (!connected) {
+      log.textContent = "Нет подключённых обработчиков — сигнал испущен в пустоту.\nВключи CONNECT_ONE_SHOT обратно.";
+      return;
+    }
+    flight = { phase: 0, t: 0 };
+    log.textContent = "picked_up.emit(self) → вызывается _on_paper_picked_up(paper)";
+  });
+
+  oneShotBtn.addEventListener("click", function () {
+    connected = !connected;
+    log.textContent = connected
+      ? "CONNECT_ONE_SHOT включён: обработчик подключён заново."
+      : "Обработчик отключился после первого срабатывания (CONNECT_ONE_SHOT).";
+  });
+
+  NP.loop(function (dt) {
+    if (flight) {
+      flight.t += dt * 2.2;
+      if (flight.t >= 1) {
+        if (flight.phase < 2) {
+          flight.phase++;
+          flight.t = 0;
+          if (flight.phase === 1) log.textContent = "_on_paper_picked_up: held_papers.append(paper)";
+          if (flight.phase === 2) {
+            log.textContent = "held_paper_changed.emit(paper) → UI показывает \"[G] to throw\"";
+            if (oneShot) connected = false;
+          }
+        } else {
+          flight = null;
+        }
+      }
+    }
+    draw();
+  });
+})();
+</script>
+</body>
+</html>

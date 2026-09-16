@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05. Камера и обзор — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="05-camera-look">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 05</div>
+    <h1>Камера и обзор мышью</h1>
+    <p class="lead">
+      Классический mouse look: горизонталь вращает всё тело игрока, вертикаль — только
+      камеру, а наклон ограничен, чтобы не переворачиваться. Вся логика — в одном
+      маленьком файле.
+    </p>
+
+    <h2 id="file">Весь файл целиком</h2>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/camera_rotator.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">extends Camera3D
+
+var pitch : float = 0.0
+
+@onready var player : CharacterBody3D = get_parent()
+@onready var controller : Node = player
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	if event is InputEventMouseMotion:
+		var motion : InputEventMouseMotion = event as InputEventMouseMotion
+
+		player.rotate_y(-motion.relative.x * controller.mouse_sensitivity)
+
+		pitch = clampf(
+			pitch - motion.relative.y * controller.mouse_sensitivity,
+			deg_to_rad(controller.min_pitch),
+			deg_to_rad(controller.max_pitch)
+		)
+		rotation.x = pitch</code></pre>
+    </div>
+
+    <h2 id="capture">1. Захват курсора</h2>
+    <p>
+      В <code>player_controller.gd</code> при старте курсор прячется и захватывается окном:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/player_controller.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED</code></pre>
+    </div>
+    <p>
+      <code>MOUSE_MODE_CAPTURED</code> — аналог <code>Cursor.lockState = Locked</code>.
+      <kbd>Esc</kbd> (<code>ui_cancel</code>) переключает захват, чтобы можно было выйти из игры.
+    </p>
+
+    <h2 id="motion">2. Ловим движение мыши</h2>
+    <p>
+      <code>_unhandled_input</code> вызывается для ввода, который не съел UI. Мы реагируем
+      только на <code>InputEventMouseMotion</code> и только когда курсор захвачен.
+    </p>
+    <p>
+      <code>motion.relative</code> — это смещение мыши в пикселях с прошлого кадра. Именно
+      оно используется, а не позиция курсора.
+    </p>
+
+    <h2 id="yaw">3. Yaw — поворот тела</h2>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">фрагмент</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">player.rotate_y(-motion.relative.x * controller.mouse_sensitivity)</code></pre>
+    </div>
+    <p>
+      Вращаем <b>родителя</b> (Player), а не камеру. Тогда всё тело поворачивается вместе со
+      взглядом — и движение, и точка удержания бумаги. Минус — потому что при движении мыши
+      вправо картинка должна поворачиваться вправо, а в Godot положительный угол вокруг Y
+      крутит против часовой.
+    </p>
+
+    <h2 id="pitch">4. Pitch — наклон камеры</h2>
+    <p>
+      <code>pitch</code> хранится отдельной переменной и ограничивается
+      <code>clampf</code> между <code>min_pitch</code> и <code>max_pitch</code> (по умолчанию
+      −80° и +80°). <code>deg_to_rad</code> переводит градусы в радианы, потому что
+      <code>rotation</code> работает в радианах.
+    </p>
+    <div class="callout warn">
+      <div class="callout-title">Почему хранить отдельно, а не читать rotation.x?</div>
+      <p>
+        Если каждый кадр писать <code>rotation.x = clampf(rotation.x + ..., ...)</code>,
+        всё тоже будет работать. Но отдельная переменная — чище: значение не «застревает» на
+        границе и его легко показать в отладке. Главное — применять её через
+        <code>rotation.x = pitch</code>, а не копить ошибку.
+      </p>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        В Unity ты бы делал <code>transform.Rotate(Vector3.up, x)</code> и
+        <code>transform.localEulerAngles</code> с ручной нормализацией углов. В Godot
+        <code>rotate_y()</code> и <code>rotation.x</code> уже принимают радианы и не требуют
+        возни с «−180…180».
+      </p>
+    </div>
+
+    <h2 id="demo">Интерактив: mouse look</h2>
+    <p>
+      Зажми кнопку мыши на картинке и води мышью. Слева — вид сбоку (наклон камеры),
+      справа — вид сверху (поворот тела).
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>yaw на Player, pitch на Camera3D</span></div>
+      <div class="demo-body">
+        <canvas id="cam-canvas" data-h="300" style="cursor:grab;"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="cam-reset">Сбросить взгляд</button>
+          <label>Чувствительность <input type="range" id="sens" min="1" max="12" value="4" step="1"></label>
+        </div>
+        <div class="demo-readout" id="cam-readout"></div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Почему горизонтальное вращение применяется к Player, а не к камере?</p>
+      <button class="opt" data-correct="true" data-explain="Тогда всё тело поворачивается со взглядом, и move_dir из player_movement.gd автоматически совпадает с направлением взгляда.">Чтобы всё тело поворачивалось вместе со взглядом</button>
+      <button class="opt" data-explain="Камера и так вращается по X — дело не в этом.">Иначе камера не сможет наклоняться</button>
+      <button class="opt" data-explain="Mouse mode не зависит от того, какой узел вращается.">Иначе не захватится курсор</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Что ограничивает <code>clampf(...)</code>?</p>
+      <button class="opt" data-explain="Скорость мыши не ограничивается этим вызовом.">Скорость движения мыши</button>
+      <button class="opt" data-correct="true" data-explain="clampf держит pitch в пределах min_pitch..max_pitch (±80°), чтобы нельзя было перевернуть камеру.">Наклон камеры в диапазоне −80…+80 градусов</button>
+      <button class="opt" data-explain="Дистанция взаимодействия ограничивается в Interactor.">Дистанцию подбора бумаги</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Зачем нужен <code>deg_to_rad()</code>?</p>
+      <button class="opt" data-correct="true" data-explain="rotation и rotate_y принимают радианы, а min/max_pitch заданы в градусах для удобства в инспекторе.">Потому что rotation работает в радианах, а настройки — в градусах</button>
+      <button class="opt" data-explain="Это не связано с чувствительностью.">Чтобы перевести чувствительность в градусы</button>
+      <button class="opt" data-explain="Наклон не зависит от FPS.">Чтобы убрать зависимость от частоты кадров</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-05">
+      <label for="done-05">Я разобрался с главой 05 — камера и обзор</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("cam-canvas");
+  var reset = document.getElementById("cam-reset");
+  var sens = document.getElementById("sens");
+  var readout = document.getElementById("cam-readout");
+  if (!canvas) return;
+
+  var view = NP.fitCanvas(canvas);
+  var yaw = 0;
+  var pitch = 0;
+  var dragging = false;
+  var last = null;
+
+  canvas.addEventListener("pointerdown", function (e) {
+    dragging = true;
+    last = { x: e.clientX, y: e.clientY };
+    canvas.style.cursor = "grabbing";
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - last.x;
+    var dy = e.clientY - last.y;
+    last = { x: e.clientX, y: e.clientY };
+    var s = parseFloat(sens.value) * 0.0012;
+    yaw -= dx * s;
+    pitch -= dy * s;
+    pitch = Math.max(-80 * Math.PI / 180, Math.min(80 * Math.PI / 180, pitch));
+  });
+  canvas.addEventListener("pointerup", function (e) {
+    dragging = false;
+    canvas.style.cursor = "grab";
+    if (e.pointerId !== undefined) { try { canvas.releasePointerCapture(e.pointerId); } catch (err) {} }
+  });
+  reset.addEventListener("click", function () { yaw = 0; pitch = 0; });
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+    var half = view.w / 2;
+
+    /* --- вид сбоку: pitch --- */
+    var sx = half / 2;
+    var sy = view.h / 2;
+    var R = Math.min(half, view.h) * 0.34;
+
+    ctx.strokeStyle = "#26313d";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(sx - R * 1.4, sy); ctx.lineTo(sx + R * 1.4, sy); ctx.stroke();
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.font = "11px monospace";
+    ctx.fillText("горизонт", sx + R * 1.4 - 54, sy - 6);
+
+    // границы ±80
+    var lim = 80 * Math.PI / 180;
+    [-lim, lim].forEach(function (a) {
+      ctx.strokeStyle = "rgba(255,123,114,0.35)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + Math.cos(a) * R * 1.3, sy + Math.sin(a) * R * 1.3);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // конус взгляда
+    var dir = { x: Math.cos(pitch), y: Math.sin(pitch) };
+    ctx.fillStyle = "rgba(108,196,242,0.10)";
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.arc(sx, sy, R * 1.2, pitch - 0.35, pitch + 0.35);
+    ctx.closePath();
+    ctx.fill();
+
+    NP.arrow(ctx, sx, sy, sx + dir.x * R * 1.3, sy + dir.y * R * 1.3, NP.COLORS.accent2, 3);
+
+    ctx.fillStyle = NP.COLORS.text;
+    ctx.font = "bold 12px system-ui";
+    ctx.fillText("Camera3D — pitch", sx - 60, 20);
+    ctx.fillStyle = NP.COLORS.accent2;
+    ctx.font = "12px monospace";
+    ctx.fillText((pitch * 180 / Math.PI).toFixed(1) + "°", sx + dir.x * R * 1.3 + 8, sy + dir.y * R * 1.3);
+
+    /* --- разделитель --- */
+    ctx.strokeStyle = "#26313d";
+    ctx.beginPath(); ctx.moveTo(half, 20); ctx.lineTo(half, view.h - 20); ctx.stroke();
+
+    /* --- вид сверху: yaw --- */
+    var tx = half + half / 2;
+    var ty = sy;
+    var TR = Math.min(half, view.h) * 0.3;
+
+    ctx.strokeStyle = "#1b2632";
+    ctx.beginPath(); ctx.arc(tx, ty, TR, 0, Math.PI * 2); ctx.stroke();
+
+    // оси мира
+    NP.arrow(ctx, tx, ty, tx, ty + TR * 0.9, "#2c3a49", 1.5);
+    NP.arrow(ctx, tx, ty, tx + TR * 0.9, ty, "#2c3a49", 1.5);
+    ctx.fillStyle = "#3a4a5a";
+    ctx.fillText("+Z", tx - 12, ty + TR * 0.9 + 12);
+    ctx.fillText("+X", tx + TR * 0.9 + 4, ty + 4);
+
+    var f = { x: -Math.sin(yaw), y: Math.cos(yaw) };
+    var r = { x: Math.cos(yaw), y: Math.sin(yaw) };
+
+    NP.arrow(ctx, tx, ty, tx + r.x * TR * 0.7, ty + r.y * TR * 0.7, NP.COLORS.accent2, 2);
+    NP.arrow(ctx, tx, ty, tx + f.x * TR, ty + f.y * TR, NP.COLORS.green, 3);
+
+    ctx.fillStyle = "#0f1620";
+    ctx.strokeStyle = NP.COLORS.text;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(tx, ty, 12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = NP.COLORS.text;
+    ctx.font = "bold 12px system-ui";
+    ctx.fillText("Player — yaw", tx - 46, 20);
+    ctx.fillStyle = NP.COLORS.green;
+    ctx.font = "12px monospace";
+    ctx.fillText((yaw * 180 / Math.PI).toFixed(1) + "°", tx + 16, ty + 4);
+
+    readout.textContent =
+      "mouse_sensitivity = " + (parseFloat(sens.value) * 0.0012).toFixed(4) + "\n" +
+      "player.rotate_y(-relative.x * sensitivity)              → yaw = " +
+      (yaw * 180 / Math.PI).toFixed(1) + "°\n" +
+      "pitch = clampf(pitch - relative.y * sensitivity, deg_to_rad(-80), deg_to_rad(80)) → pitch = " +
+      (pitch * 180 / Math.PI).toFixed(1) + "°";
+  }
+
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

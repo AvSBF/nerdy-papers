@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01. Мышление Godot — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="01-unity-to-godot">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 01</div>
+    <h1>Мышление Godot</h1>
+    <p class="lead">
+      Прежде чем писать код, надо перестроить пару привычек. Unity и Godot решают одни и
+      те же задачи, но «изнутри» устроены по-разному. Эта глава — про то, что именно
+      поменять в голове.
+    </p>
+
+    <h2 id="tree">Сцена — это дерево узлов</h2>
+    <p>
+      В Unity сцена — это список GameObjects, у каждого из которых есть Transform и набор
+      компонентов. В Godot сцена — это <b>дерево узлов</b> (<code>Node</code>), и каждый узел
+      делает что-то конкретное. Дерево определяет, кто кого двигает, кто наследует
+      трансформацию и в каком порядке всё обновляется.
+    </p>
+    <p>
+      Посмотри на сцену игрока из проекта. Это ровно то, что ты видишь в доке «Scene» в Godot:
+    </p>
+
+    <ul class="tree">
+      <li><span class="node-name">Player</span><span class="node-type">CharacterBody3D</span>
+        <span class="badge script">player_controller.gd</span><span class="badge group">player</span>
+        <ul>
+          <li><span class="node-name">MeshInstance3D</span><span class="node-type">MeshInstance3D</span></li>
+          <li><span class="node-name">CollisionShape3D</span><span class="node-type">CollisionShape3D</span></li>
+          <li><span class="node-name">Camera3D</span><span class="node-type">Camera3D</span><span class="badge script">camera_rotator.gd</span>
+            <ul>
+              <li><span class="node-name">HoldPoint</span><span class="node-type">Node3D</span></li>
+            </ul>
+          </li>
+          <li><span class="node-name">Node</span><span class="node-type">Node</span><span class="badge script">player_movement.gd</span></li>
+          <li><span class="node-name">Interactor</span><span class="node-type">Node</span><span class="badge script">player_interactor.gd</span></li>
+          <li><span class="node-name">UI</span><span class="node-type">CanvasLayer</span><span class="badge script">interaction_prompt.gd</span>
+            <ul>
+              <li><span class="node-name">Crosshair</span><span class="node-type">ColorRect</span></li>
+              <li><span class="node-name">Label</span><span class="node-type">Label</span></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        <code>MeshInstance3D</code> — это аналог <code>MeshRenderer</code>,
+        <code>CollisionShape3D</code> — аналог <code>Collider</code>,
+        а «скрипт на узле» — это как <code>MonoBehaviour</code>, только привязанный к конкретному
+        узлу, а не к отдельному GameObject.
+      </p>
+    </div>
+
+    <h2 id="nodes">Узлы вместо компонентов</h2>
+    <p>
+      В Unity ты берёшь пустой GameObject и навешиваешь компоненты. В Godot ты
+      <b>выбираешь готовый тип узла</b>. Узел уже умеет то, что тебе нужно, а поведение
+      добавляется скриптом.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <span class="tag">CharacterBody3D</span>
+        <h4>Кинематический персонаж</h4>
+        <p>Аналог CharacterController. Ты сам считаешь velocity и вызываешь move_and_slide().</p>
+      </div>
+      <div class="card">
+        <span class="tag">RigidBody3D</span>
+        <h4>Физическое тело</h4>
+        <p>Аналог Rigidbody. Движением управляет физический движок, а не ты.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Area3D</span>
+        <h4>Зона-триггер</h4>
+        <p>Аналог Collider с Is Trigger. Ловит вход/выход объектов сигналами.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Camera3D</span>
+        <h4>Камера</h4>
+        <p>Аналог Camera. Активная камера рендерит вид.</p>
+      </div>
+      <div class="card">
+        <span class="tag">CanvasLayer</span>
+        <h4>Слой интерфейса</h4>
+        <p>Аналог Canvas в Screen Space — Overlay. UI не крутится вместе с 3D-миром.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Label3D</span>
+        <h4>Текст в мире</h4>
+        <p>Текст, висящий прямо в 3D. В Unity пришлось бы возиться с TextMeshPro.</p>
+      </div>
+    </div>
+
+    <h2 id="scenes">Сцены = префабы</h2>
+    <p>
+      В Godot нет отдельной сущности «префаб». Любая сцена (<code>.tscn</code>) может быть
+      вставлена в другую сцену — как экземпляр. Это и есть префаб.
+    </p>
+    <p>В проекте есть такие переиспользуемые сцены:</p>
+    <ul>
+      <li><code>Prefabs/Player.tscn</code> — игрок</li>
+      <li><code>Prefabs/paper.tscn</code> — одна бумажка</li>
+      <li><code>Prefabs/paper_creating_table.tscn</code> — стол-раздатчик</li>
+      <li><code>Prefabs/paper_storage.tscn</code> — ящик для хранения</li>
+      <li><code>Prefabs/+1_label.tscn</code> — всплывающая надпись «+1»</li>
+    </ul>
+    <p>
+      Главная сцена <code>Scenes/World.tscn</code> — это сцена, которая собирает их вместе:
+      пол, игрок, стол, четыре ящика и меню отладки.
+    </p>
+
+    <div class="callout warn">
+      <div class="callout-title">Важно</div>
+      <p>
+        В Godot слово <b>instance</b> означает «экземпляр сцены, вставленный в другую сцену».
+        А <code>instantiate()</code> в коде — это создание копии сцены во время игры.
+        Не путай эти два «инстанса».
+      </p>
+    </div>
+
+    <h2 id="script">Скрипт живёт на узле</h2>
+    <p>
+      Скрипт начинается с <code>extends</code> — он как бы «продолжает» тип узла. Поэтому в нём
+      сразу доступны <code>position</code>, <code>velocity</code>, сигналы и методы этого узла.
+    </p>
+    <p>Сравни: слева привычный MonoBehaviour, справа — GDScript из проекта.</p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Unity C# — Player.cs</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="text">using UnityEngine;
+
+public class Player : MonoBehaviour
+{
+    public float moveSpeed = 5f;
+
+    void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+
+    void Update()
+    {
+        // ...
+    }
+}</code></pre>
+    </div>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/player_controller.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">extends CharacterBody3D
+
+@export var move_speed : float = 5.0
+
+func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED</code></pre>
+    </div>
+
+    <p>
+      Заметь: нет класса <code>Player</code> и нет <code>GetComponent</code>. Тип узла — это и есть
+      класс, а <code>extends CharacterBody3D</code> даёт доступ к его API напрямую.
+    </p>
+
+    <h2 id="demo">Интерактив: переводчик понятий</h2>
+    <p>Нажми на понятие Unity — увидишь, как оно называется в Godot и где живёт в проекте.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>Unity → Godot</span></div>
+      <div class="demo-body">
+        <div id="translator-terms" class="pill-row"></div>
+        <div id="translator-out" class="demo-readout">Выбери понятие выше.</div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Чем в Godot является префаб?</p>
+      <button class="opt" data-correct="true" data-explain="Любая сцена .tscn может быть вставлена в другую сцену как экземпляр — это и есть роль префаба.">Обычная сцена .tscn, вставленная в другую сцену</button>
+      <button class="opt" data-explain="Отдельного типа ресурса «префаб» в Godot нет.">Отдельный тип ресурса Prefab</button>
+      <button class="opt" data-explain="Это узел, но не про префабы.">Узел PrefabInstance</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Чему соответствует <code>void Update()</code> из Unity?</p>
+      <button class="opt" data-explain="_ready() вызывается один раз, а Update — каждый кадр.">_ready()</button>
+      <button class="opt" data-correct="true" data-explain="_process(delta) вызывается каждый кадр, как Update. _physics_process — это FixedUpdate.">_process(delta)</button>
+      <button class="opt" data-explain="_physics_process — это аналог FixedUpdate.">_physics_process(delta)</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Как в Godot сослаться на другой узел вместо <code>GetComponent&lt;T&gt;()</code>?</p>
+      <button class="opt" data-correct="true" data-explain="Узлы ищутся по дереву: get_node() или @onready с путём. Компонентов здесь нет.">Через get_node() или @onready</button>
+      <button class="opt" data-explain="FindObjectOfType — про поиск объекта, а не узла в иерархии.">Через FindObjectOfType()</button>
+      <button class="opt" data-explain="Нет такого механизма; иерархия узлов решает это.">Через AddComponent()</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-01">
+      <label for="done-01">Я разобрался с главой 01 — мышление Godot</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var DATA = [
+    { u: "GameObject",        g: "Node",            d: "Базовый элемент сцены. Любой узел — это Node или его наследник." },
+    { u: "Component",         g: "Тип узла",        d: "Функциональность даёт сам тип: Camera3D, Area3D, Label3D и т.д." },
+    { u: "Transform",         g: "Node3D",          d: "Узел, у которого есть position / rotation / scale." },
+    { u: "Prefab",            g: "PackedScene",     d: "Сцена .tscn как ресурс: Prefabs/paper.tscn, Prefabs/Player.tscn." },
+    { u: "MonoBehaviour",     g: "Скрипт на узле",  d: "Например player_controller.gd на узле Player." },
+    { u: "SerializeField",    g: "@export",         d: "move_speed и mouse_sensitivity в player_controller.gd видны в инспекторе." },
+    { u: "Tags",              g: "Группы",          d: "Paper добавляется в группу \"paper\", кнопка — в \"button\"." },
+    { u: "Rigidbody",         g: "RigidBody3D",     d: "Именно так реализована бумажка — paper.gd." },
+    { u: "CharacterController", g: "CharacterBody3D", d: "Игрок: player_controller.gd + player_movement.gd." },
+    { u: "Coroutine",         g: "await",           d: "table_button_press.gd ждёт таймер через await." },
+    { u: "Canvas (Overlay)",  g: "CanvasLayer",     d: "UI игрока: узел UI внутри Player.tscn." },
+    { u: "Debug.Log",         g: "print()",         d: "paper.gd пишет print(\"найдена бумага под полом...\")." }
+  ];
+
+  var terms = document.getElementById("translator-terms");
+  var out = document.getElementById("translator-out");
+  if (!terms || !out) return;
+
+  DATA.forEach(function (item, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = item.u;
+    b.style.cssText = "font-family:var(--mono);font-size:12px;cursor:pointer;border-radius:999px;padding:3px 12px;border:1px solid var(--border);background:var(--bg-3);color:var(--text);";
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(terms.children, function (c) {
+        c.style.borderColor = "var(--border)";
+        c.style.color = "var(--text)";
+      });
+      b.style.borderColor = NP.COLORS.accent2;
+      b.style.color = NP.COLORS.accent2;
+      out.textContent = item.u + "  →  " + item.g + "\n\n" + item.d;
+    });
+    if (i === 0) setTimeout(function () { b.click(); }, 0);
+    terms.appendChild(b);
+  });
+})();
+</script>
+</body>
+</html>

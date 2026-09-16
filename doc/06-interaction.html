@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06. Взаимодействие — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="06-interaction">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 06</div>
+    <h1>Взаимодействие: группы, рейкаст, рука</h1>
+    <p class="lead">
+      Как игра понимает, на что ты смотришь? Рейкаст из камеры + группы узлов. Здесь
+      встречаются сразу несколько важных механик Godot: статические утилиты, физический
+      запрос и кастомные сигналы.
+    </p>
+
+    <h2 id="raycast">Утилита рейкаста</h2>
+    <p>
+      В проекте есть отдельный класс <code>InteractionRaycast</code>. Он не узел, а просто
+      набор статических функций — удобно вызывать из любого места.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Utilities/interaction_raycast.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">class_name InteractionRaycast
+extends RefCounted
+
+static func ray_forward(camera: Camera3D, distance: float, mask: int = 0xFFFFFFFF) -> Dictionary:
+	var space := camera.get_world_3d().direct_space_state
+	var from := camera.global_position
+	var to := from + camera.global_transform.basis * Vector3(0, 0, -1) * distance
+	var query := PhysicsRayQueryParameters3D.create(from, to, mask)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	return space.intersect_ray(query)
+
+static func get_node_in_front(camera: Camera3D, distance: float, predicate: Callable, mask: int = 0xFFFFFFFF) -> Node:
+	var hit := ray_forward(camera, distance, mask)
+	if hit.is_empty():
+		return null
+	var collider := hit["collider"] as Node
+	while collider != null:
+		if predicate.call(collider):
+			return collider
+		collider = collider.get_parent()
+	return null</code></pre>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        Это аналог <code>Physics.Raycast</code>, только результат приходит словарём
+        (<code>Dictionary</code>) с ключами <code>collider</code>, <code>position</code>,
+        <code>normal</code> и т.д. Если ничего не попали — словарь пустой,
+        <code>hit.is_empty()</code> вернёт <code>true</code>.
+      </p>
+    </div>
+
+    <h3>Зачем подниматься по родителям?</h3>
+    <p>
+      Луч попадает в <b>коллайдер</b> — обычно это дочерний <code>CollisionShape3D</code>.
+      Но нужен-то нам логический узел, который в группе. Поэтому цикл <code>while</code>
+      поднимается от коллайдера вверх по дереву, пока не найдёт подходящий узел.
+    </p>
+
+    <h2 id="interactor">Interactor: мозг взаимодействия</h2>
+    <p>Ключевые части <code>player_interactor.gd</code>:</p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/player_interactor.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">signal target_changed(target: Node)
+signal held_paper_changed(paper: Node)
+
+const GROUPS : Array[String] = ["button", "paper"]
+
+@export var interaction_distance : float = 3.0
+@export_flags_3d_physics var interaction_mask : int = 0xFFFFFFFF
+
+func _physics_process(_delta: float) -> void:
+	_update_target()
+
+func _find_target() -> Node:
+	return InteractionRaycast.get_node_in_front(
+		camera,
+		interaction_distance,
+		func(node : Node) -> bool:
+			for group in GROUPS:
+				if node.is_in_group(group):
+					return true
+			return false,
+		interaction_mask
+	)</code></pre>
+    </div>
+
+    <p>
+      <code>func(node) -> bool:</code> — это <b>лямбда</b>, аналог делегата
+      <code>Func&lt;Node, bool&gt;</code> в C#. Она передаётся как <code>Callable</code>.
+    </p>
+
+    <h3>Почему цель обновляется в <code>_physics_process</code>?</h3>
+    <p>
+      Рейкаст — часть физического мира, и его корректнее делать на физическом шаге. Кроме
+      того, <code>_update_target</code> испускает <code>target_changed</code> только когда цель
+      реально изменилась — чтобы не дёргать UI каждый кадр.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">фрагмент</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _update_target() -> void:
+	var target := _find_target()
+	if target == current_target:
+		return
+	current_target = target
+	target_changed.emit(current_target)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("interact"):
+		interact_with_current()
+	elif event.is_action_pressed("throw"):
+		_throw_current()</code></pre>
+    </div>
+
+    <h2 id="prompt">Подсказки в UI</h2>
+    <p>
+      Интерфейс ничего не «опрашивает» — он просто слушает сигналы Interactor:
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/interaction_prompt.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _ready() -> void:
+	interactor.target_changed.connect(_update_prompt)
+	interactor.held_paper_changed.connect(_update_prompt)
+	label.hide()
+
+func _update_prompt(_arg: Variant = null) -> void:
+	if not interactor.held_papers.is_empty():
+		label.text = "[G] to throw"
+		label.show()
+		return
+	var target : Node = interactor.current_target
+	if target != null and target.is_in_group("button"):
+		label.text = "[E] to interact"
+		label.show()
+	elif target != null and target.is_in_group("paper"):
+		label.text = "[E] to pick up"
+		label.show()
+	else:
+		label.hide()</code></pre>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">Паттерн</div>
+      <p>
+        «Логика испускает сигнал → UI подписывается и обновляется» — это стандартный способ
+        развязывать логику и интерфейс в Godot. Никаких <code>FindObjectOfType&lt;UI&gt;()</code>.
+      </p>
+    </div>
+
+    <h2 id="demo">Интерактив: рейкаст из камеры</h2>
+    <p>
+      Меняй дистанцию взаимодействия и маску. Смотри, во что попадёт луч и что вернёт
+      <code>get_node_in_front</code> после подъёма по родителям.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>PhysicsRayQueryParameters3D</span></div>
+      <div class="demo-body">
+        <canvas id="ray-canvas" data-h="260"></canvas>
+        <div class="demo-controls">
+          <label>interaction_distance <input type="range" id="ray-dist" min="1" max="6" value="3" step="0.1"></label>
+          <label><input type="checkbox" id="ray-paper" checked> бумага в маске</label>
+          <label><input type="checkbox" id="ray-button" checked> кнопка в маске</label>
+        </div>
+        <div class="demo-readout" id="ray-readout"></div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Почему <code>get_node_in_front</code> поднимается по родителям?</p>
+      <button class="opt" data-explain="Рейкаст не возвращает группы автоматически.">Чтобы получить список групп узла</button>
+      <button class="opt" data-correct="true" data-explain="Луч попадает в коллайдер-ребёнка, а логический узел (в группе) — выше по дереву. Цикл ищет его.">Потому что луч попадает в коллайдер, а нужен логический узел выше</button>
+      <button class="opt" data-explain="Слои уже учтены параметром mask в запросе.">Чтобы применить collision_mask</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Что такое <code>func(node) -> bool:</code> внутри вызова?</p>
+      <button class="opt" data-correct="true" data-explain="Это лямбда (анонимная функция), передаваемая как Callable — аналог делегата в C#.">Лямбда, переданная как Callable</button>
+      <button class="opt" data-explain="Это не сигнал, а функция-предикат.">Сигнал с одним аргументом</button>
+      <button class="opt" data-explain="Это не класс, а анонимная функция.">Вложенный класс</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Как UI узнаёт, что цель под курсором изменилась?</p>
+      <button class="opt" data-explain="UI не делает рейкаст — это задача Interactor.">UI каждый кадр сам делает рейкаст</button>
+      <button class="opt" data-correct="true" data-explain="Interactor испускает target_changed, а interaction_prompt.gd подписан на него через connect().">Через сигнал target_changed от Interactor</button>
+      <button class="opt" data-explain="Глобальных событий ввода для этого нет.">Через глобальный Input singleton</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-06">
+      <label for="done-06">Я разобрался с главой 06 — взаимодействие</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("ray-canvas");
+  var dist = document.getElementById("ray-dist");
+  var cbPaper = document.getElementById("ray-paper");
+  var cbButton = document.getElementById("ray-button");
+  var readout = document.getElementById("ray-readout");
+  if (!canvas) return;
+
+  var view = NP.fitCanvas(canvas);
+
+  // Объекты на сцене: collider находится в группе (или нет), позиция по X в метрах.
+  var objects = [
+    { x: 1.6, name: "Button/CollisionShape3D", parent: "Button", group: "button", color: NP.COLORS.accent2 },
+    { x: 3.4, name: "Paper/CollisionShape3D", parent: "Paper", group: "paper", color: NP.COLORS.orange },
+    { x: 5.0, name: "Wall/CollisionShape3D", parent: "Wall", group: null, color: "#3a4a5a" }
+  ];
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+
+    var D = parseFloat(dist.value);
+    var maxD = 6;
+    var x0 = 60;
+    var x1 = view.w - 30;
+    var scale = (x1 - x0) / maxD;
+    var y = view.h * 0.62;
+
+    // пол
+    ctx.strokeStyle = "#26313d";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0, y + 30); ctx.lineTo(x1, y + 30); ctx.stroke();
+
+    // камера
+    ctx.fillStyle = "#0f1620";
+    ctx.strokeStyle = NP.COLORS.text;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0 - 34, y - 18); ctx.lineTo(x0 - 34, y + 18); ctx.lineTo(x0 - 8, y); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.font = "11px monospace";
+    ctx.fillText("Camera3D", x0 - 44, y + 40);
+
+    // луч
+    var rayEnd = x0 + D * scale;
+    var hitObj = null;
+    for (var i = 0; i < objects.length; i++) {
+      var o = objects[i];
+      var inMask = (o.group === "paper" && cbPaper.checked) || (o.group === "button" && cbButton.checked) || o.group === null;
+      var ox = x0 + o.x * scale;
+      if (ox <= rayEnd && inMask && !hitObj) {
+        hitObj = o;
+        rayEnd = ox;
+      }
+    }
+
+    ctx.strokeStyle = hitObj ? (hitObj.group ? NP.COLORS.green : NP.COLORS.red) : NP.COLORS.accent2;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(rayEnd, y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // максимальная дистанция
+    ctx.strokeStyle = "rgba(108,196,242,0.25)";
+    ctx.beginPath(); ctx.moveTo(x0 + D * scale, y - 46); ctx.lineTo(x0 + D * scale, y + 30); ctx.stroke();
+    ctx.fillStyle = NP.COLORS.accent2;
+    ctx.font = "11px monospace";
+    ctx.fillText("distance = " + D.toFixed(1) + " м", x0 + D * scale - 40, y - 54);
+
+    // объекты
+    objects.forEach(function (o) {
+      var ox = x0 + o.x * scale;
+      var inMask = (o.group === "paper" && cbPaper.checked) || (o.group === "button" && cbButton.checked) || o.group === null;
+      ctx.globalAlpha = inMask ? 1 : 0.25;
+      ctx.fillStyle = o.color;
+      ctx.fillRect(ox - 5, y - 40, 10, 70);
+      ctx.font = "10px monospace";
+      ctx.fillText(o.parent, ox - 18, y - 48);
+      ctx.globalAlpha = 1;
+    });
+
+    // маркер попадания
+    if (hitObj) {
+      ctx.fillStyle = hitObj.group ? NP.COLORS.green : NP.COLORS.red;
+      ctx.beginPath(); ctx.arc(rayEnd, y, 6, 0, Math.PI * 2); ctx.fill();
+    }
+
+    var lines = ["hit.collider = " + (hitObj ? hitObj.name : "{} (пусто)")];
+    if (hitObj) {
+      lines.push("  подъём по родителям:");
+      lines.push("    " + hitObj.name + "  → группа: " + (hitObj.group || "нет"));
+      lines.push("    " + hitObj.parent + "  → группа: " + (hitObj.group || "нет"));
+      lines.push("  результат get_node_in_front: " + (hitObj.group ? hitObj.parent : "null"));
+      lines.push("");
+      lines.push(hitObj.group
+        ? "Interactor видит цель и UI покажет: " + (hitObj.group === "button" ? "\"[E] to interact\"" : "\"[E] to pick up\"")
+        : "Цель не в группе button/paper → current_target = null, подсказка скрыта.");
+    } else {
+      lines.push("  луч ни во что не попал (или объекты вне маски).");
+      lines.push("  результат get_node_in_front: null");
+    }
+    readout.textContent = lines.join("\n");
+  }
+
+  [dist, cbPaper, cbButton].forEach(function (el) { el.addEventListener("input", draw); });
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09. UI и твины — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="09-ui-tweens">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 09</div>
+    <h1>UI и твины</h1>
+    <p class="lead">
+      Интерфейс в Godot строится из Control-узлов внутри <code>CanvasLayer</code>. А анимации
+      без ключевых кадров делаются твинами — одной строкой. Разберём отладочное меню и
+      всплывающий «+1».
+    </p>
+
+    <h2 id="canvaslayer">CanvasLayer и Control</h2>
+    <p>
+      <code>CanvasLayer</code> — это слой, который рисуется поверх 3D и не крутится вместе с
+      камерой. Внутри него живут <b>Control</b>-узлы: кнопки, ползунки, тексты.
+    </p>
+    <ul class="tree">
+      <li><span class="node-name">DebugMenu</span><span class="node-type">CanvasLayer</span><span class="badge script">debug_menu.gd</span>
+        <ul>
+          <li><span class="node-name">Panel</span><span class="node-type">PanelContainer</span>
+            <ul>
+              <li><span class="node-name">Margin</span><span class="node-type">MarginContainer</span>
+                <ul>
+                  <li><span class="node-name">VBox</span><span class="node-type">VBoxContainer</span>
+                    <ul>
+                      <li><span class="node-name">SpawnRow</span><span class="node-type">HBoxContainer</span>
+                        <ul>
+                          <li><span class="node-name">SpawnCountSlider</span><span class="node-type">HSlider</span></li>
+                          <li><span class="node-name">SpawnCountValue</span><span class="node-type">Label</span></li>
+                          <li><span class="node-name">SpawnButton</span><span class="node-type">Button</span></li>
+                        </ul>
+                      </li>
+                      <li><span class="node-name">MaxHeldRow</span><span class="node-type">HBoxContainer</span></li>
+                      <li><span class="node-name">DeleteButton</span><span class="node-type">Button</span></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        <code>CanvasLayer</code> ≈ Canvas в режиме Screen Space — Overlay.
+        Контейнеры (<code>VBoxContainer</code>, <code>HBoxContainer</code>,
+        <code>MarginContainer</code>) — это автоматическая раскладка: аналог
+        Horizontal/Vertical Layout Group, но встроенный в типы узлов.
+      </p>
+    </div>
+
+    <h2 id="debug">Отладочное меню</h2>
+    <p>
+      Полный файл — отличный пример работы с Control-узлами и сигналами кнопок:
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/debug_menu.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">extends CanvasLayer
+
+@onready var panel : PanelContainer = $Panel
+@onready var spawn_count_slider : HSlider = $Panel/Margin/VBox/SpawnRow/SpawnCountSlider
+@onready var spawn_count_value : Label = $Panel/Margin/VBox/SpawnRow/SpawnCountValue
+@onready var spawn_button : Button = $Panel/Margin/VBox/SpawnRow/SpawnButton
+@onready var max_held_slider : HSlider = $Panel/Margin/VBox/MaxHeldRow/MaxHeldSlider
+@onready var max_held_value : Label = $Panel/Margin/VBox/MaxHeldRow/MaxHeldValue
+@onready var delete_button : Button = $Panel/Margin/VBox/DeleteButton
+
+@onready var interactor : Node = get_tree().current_scene.get_node("Player/Interactor")
+
+func _ready() -> void:
+	panel.visible = false
+	spawn_count_slider.value_changed.connect(_on_spawn_count_changed)
+	max_held_slider.value_changed.connect(_on_max_held_changed)
+	spawn_button.pressed.connect(_on_spawn_pressed)
+	delete_button.pressed.connect(_on_delete_pressed)
+	_on_spawn_count_changed(spawn_count_slider.value)
+	_on_max_held_changed(max_held_slider.value)</code></pre>
+    </div>
+
+    <p>Что здесь стоит заметить:</p>
+    <ul>
+      <li>Путь <code>$Panel/Margin/VBox/...</code> — это путь по дереву, как <code>transform.Find("...")</code>.</li>
+      <li><code>value_changed</code> и <code>pressed</code> — встроенные сигналы узлов, подключаются через <code>connect()</code>.</li>
+      <li>Обработчики вызываются вручную в конце <code>_ready()</code>, чтобы подписи сразу показали начальные значения.</li>
+    </ul>
+
+    <h3>Горячая клавиша и курсор</h3>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/debug_menu.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("debug_menu"):
+		_toggle_menu()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel") and panel.visible:
+		_toggle_menu()
+		get_viewport().set_input_as_handled()
+
+func _toggle_menu() -> void:
+	panel.visible = not panel.visible
+	if panel.visible:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED</code></pre>
+    </div>
+    <p>
+      <code>set_input_as_handled()</code> говорит движку «этот ввод я забрал» — чтобы его не
+      обработали другие узлы (например, камера или закрытие по Esc). А ещё при открытом меню
+      курсор освобождается, чтобы можно было кликать по кнопкам.
+    </p>
+
+    <h2 id="tween">Твины</h2>
+    <p>
+      Твин — это анимация свойства, создаваемая в коде. Никаких AnimationClip: пишешь
+      <code>create_tween()</code> и цепочку изменений.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Storage/paper_storage.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">var move_tween := create_tween()
+move_tween.tween_property(label, "position", target_position, LABEL_MOVE_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+await anim_player.animation_finished
+await get_tree().create_timer(LABEL_HOLD_TIME).timeout
+
+var fade_tween := create_tween()
+fade_tween.tween_property(label, "modulate:a", 0.0, LABEL_FADE_TIME)
+await fade_tween.finished
+label.queue_free()</code></pre>
+    </div>
+
+    <ul>
+      <li><code>tween_property(объект, "свойство", цель, время)</code> — базовая операция.</li>
+      <li><code>set_trans</code> / <code>set_ease</code> — форма кривой и способ входа/выхода (как AnimationCurve).</li>
+      <li>Два <code>await</code> подряд делают паузу: сначала ждём анимацию появления, потом выдержку, потом гасим прозрачность.</li>
+      <li><code>"modulate:a"</code> — альфа-канал цвета: так плавно скрывают любой CanvasItem.</li>
+    </ul>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Параллельные твины — player_interactor.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">var tween := create_tween()
+for i in held_papers.size():
+	var p := held_papers[i]
+	tween.parallel().tween_property(p, "hold_offset", _stack_offset_for_index(i), RISE_TIME)
+_throwing = false</code></pre>
+    </div>
+    <p>
+      <code>parallel()</code> запускает следующую операцию <b>одновременно</b> с предыдущей,
+      а не после неё. Так вся стопка бумаг опускается синхронно.
+    </p>
+
+    <div class="callout tip">
+      <div class="callout-title">Твин живёт до конца</div>
+      <p>
+        Твин автоматически привязан к узлу и сам запускается. Если нужно остановить —
+        <code>tween.kill()</code>. А <code>await tween.finished</code> ждёт завершения, как
+        <code>yield return tween.WaitForCompletion()</code> в C#.
+      </p>
+    </div>
+
+    <h2 id="demo">Интерактив: кривые твинов</h2>
+    <p>Меняй trans и ease и смотри, как меняется движение. Кнопка «+1» повторяет анимацию из проекта.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>Tween.TRANS_* / Tween.EASE_*</span></div>
+      <div class="demo-body">
+        <canvas id="tween-canvas" data-h="260"></canvas>
+        <div class="demo-controls">
+          <label>trans
+            <select id="trans">
+              <option value="linear">LINEAR</option>
+              <option value="sine">SINE</option>
+              <option value="quad" selected>QUAD</option>
+              <option value="cubic">CUBIC</option>
+              <option value="back">BACK</option>
+              <option value="elastic">ELASTIC</option>
+            </select>
+          </label>
+          <label>ease
+            <select id="ease">
+              <option value="in">EASE_IN</option>
+              <option value="out" selected>EASE_OUT</option>
+              <option value="in_out">EASE_IN_OUT</option>
+              <option value="out_in">EASE_OUT_IN</option>
+            </select>
+          </label>
+          <label>длительность <input type="range" id="dur" min="0.2" max="2" value="0.8" step="0.1"></label>
+          <button type="button" id="play-tween">Играть твин</button>
+          <button type="button" id="plus-one">Показать «+1»</button>
+        </div>
+        <div class="demo-readout" id="tween-readout"></div>
+      </div>
+    </div>
+
+    <h2 id="final">Что дальше</h2>
+    <p>Ты прошёл весь проект. Вот направления, куда двигаться:</p>
+    <div class="grid">
+      <div class="card"><span class="tag">Механики</span><h4>Прыжок и гравитация</h4><p>Добавь <code>velocity.y</code> и <code>is_on_floor()</code> в player_movement.gd.</p></div>
+      <div class="card"><span class="tag">Геймплей</span><h4>Очки и цели</h4><p>Подключись к <code>held_paper_changed</code> и веди счётчик в UI.</p></div>
+      <div class="card"><span class="tag">Полировка</span><h4>Звук</h4><p>Узел <code>AudioStreamPlayer3D</code> на бумаге и ящике, сигнал <code>body_entered</code>.</p></div>
+      <div class="card"><span class="tag">Архитектура</span><h4>Autoload</h4><p>Глобальный синглтон (аналог статического класса) для сохранений и настроек.</p></div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Зачем нужен <code>CanvasLayer</code> для UI?</p>
+      <button class="opt" data-explain="Control-узлы можно класть и без CanvasLayer, но тогда они попадут в 3D-пространство.">Чтобы UI работал быстрее</button>
+      <button class="opt" data-correct="true" data-explain="CanvasLayer рисует UI поверх 3D и не наследует трансформ камеры/мира.">Чтобы интерфейс не крутился вместе с 3D-миром</button>
+      <button class="opt" data-explain="Ввод обрабатывается и без CanvasLayer.">Чтобы ловить ввод клавиатуры</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Что делает <code>tween.parallel()</code>?</p>
+      <button class="opt" data-explain="parallel() не ускоряет, а распараллеливает шаги.">Ускоряет твин в 2 раза</button>
+      <button class="opt" data-correct="true" data-explain="Следующая операция запускается одновременно с предыдущей, а не после неё.">Запускает следующую операцию одновременно с предыдущей</button>
+      <button class="opt" data-explain="Для паузы есть pause().">Ставит твин на паузу</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Что делает <code>get_viewport().set_input_as_handled()</code>?</p>
+      <button class="opt" data-correct="true" data-explain="Ввод помечается обработанным и не идёт дальше по узлам — иначе Esc мог бы сработать дважды.">Помечает ввод обработанным, чтобы его не увидели другие узлы</button>
+      <button class="opt" data-explain="Это не про скорость.">Ускоряет обработку ввода</button>
+      <button class="opt" data-explain="Курсор переключается через Input.mouse_mode.">Переключает захват курсора</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-09">
+      <label for="done-09">Я разобрался с главой 09 — UI и твины</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("tween-canvas");
+  var transSel = document.getElementById("trans");
+  var easeSel = document.getElementById("ease");
+  var dur = document.getElementById("dur");
+  var playBtn = document.getElementById("play-tween");
+  var plusBtn = document.getElementById("plus-one");
+  var readout = document.getElementById("tween-readout");
+  if (!canvas) return;
+
+  var view = NP.fitCanvas(canvas);
+  var playing = false;
+  var t = 0;
+  var plus = null;
+
+  function base(kind, x) {
+    switch (kind) {
+      case "linear": return x;
+      case "sine": return 1 - Math.cos(x * Math.PI / 2);
+      case "quad": return x * x;
+      case "cubic": return x * x * x;
+      case "back": return x * x * (2.70158 * x - 1.70158);
+      case "elastic":
+        if (x === 0 || x === 1) return x;
+        return Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * (2 * Math.PI / 3)) + 1;
+      default: return x;
+    }
+  }
+
+  function eased(kind, mode, x) {
+    switch (mode) {
+      case "in": return base(kind, x);
+      case "out": return 1 - base(kind, 1 - x);
+      case "in_out": return x < 0.5 ? base(kind, 2 * x) / 2 : 1 - base(kind, 2 - 2 * x) / 2;
+      case "out_in": return x < 0.5 ? (1 - base(kind, 1 - 2 * x)) / 2 : (1 + base(kind, 2 * x - 1)) / 2;
+      default: return x;
+    }
+  }
+
+  playBtn.addEventListener("click", function () { t = 0; playing = true; });
+  plusBtn.addEventListener("click", function () { plus = { x: view.w * 0.5, y: view.h * 0.6, life: 1, scale: 0 }; });
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+
+    var kind = transSel.value;
+    var mode = easeSel.value;
+    var D = parseFloat(dur.value);
+
+    if (playing) {
+      t += 1 / 60 / D;
+      if (t >= 1) { t = 1; playing = false; }
+    }
+
+    var graphW = Math.min(view.w * 0.5, 320);
+    var graphH = view.h * 0.6;
+    var gx = 30;
+    var gy = view.h - 40;
+
+    // рамка графика
+    ctx.strokeStyle = "#26313d";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(gx, gy - graphH, graphW, graphH);
+
+    // кривая
+    ctx.strokeStyle = NP.COLORS.accent2;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var i = 0; i <= 100; i++) {
+      var x = i / 100;
+      var y = eased(kind, mode, x);
+      var px = gx + x * graphW;
+      var py = gy - Math.max(-0.15, Math.min(1.15, y)) * graphH;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // точка на кривой
+    var cy = eased(kind, mode, t);
+    var cx = gx + t * graphW;
+    var cyp = gy - Math.max(-0.15, Math.min(1.15, cy)) * graphH;
+    ctx.fillStyle = NP.COLORS.yellow;
+    ctx.beginPath(); ctx.arc(cx, cyp, 5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.font = "11px monospace";
+    ctx.fillText("ease(" + kind + ", " + mode + ")", gx, gy - graphH - 8);
+    ctx.fillText("t = " + t.toFixed(2) + "   value = " + cy.toFixed(3), gx, gy + 18);
+
+    // дорожка
+    var tx = view.w * 0.58;
+    var tw = view.w * 0.38;
+    var ty = view.h * 0.4;
+    ctx.strokeStyle = "#1b2632";
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tw, ty); ctx.stroke();
+
+    var bx = tx + tw * cy;
+    ctx.fillStyle = NP.COLORS.orange;
+    ctx.fillRect(bx - 14, ty - 14, 28, 28);
+    ctx.strokeStyle = "#0b0f14";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx - 14, ty - 14, 28, 28);
+
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.font = "11px monospace";
+    ctx.fillText("property", tx, ty - 26);
+    ctx.fillText("0", tx - 4, ty + 30);
+    ctx.fillText("target", tx + tw - 14, ty + 30);
+
+    // +1 label анимация
+    if (plus) {
+      plus.life -= 0.01;
+      plus.y -= 0.8;
+      plus.scale = Math.min(1, plus.scale + 0.06);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, plus.life);
+      ctx.translate(plus.x, plus.y);
+      ctx.scale(plus.scale, plus.scale);
+      ctx.fillStyle = NP.COLORS.green;
+      ctx.font = "bold 40px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("+1", 0, 0);
+      ctx.restore();
+      ctx.textAlign = "left";
+      if (plus.life <= 0) plus = null;
+    }
+
+    readout.textContent =
+      "create_tween().tween_property(node, \"property\", target, " + D.toFixed(1) + ")\n" +
+      "  .set_trans(Tween.TRANS_" + kind.toUpperCase() + ").set_ease(Tween.EASE_" + mode.toUpperCase() + ")";
+  }
+
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

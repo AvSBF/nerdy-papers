@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04. Движение игрока — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="04-player-movement">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 04</div>
+    <h1>Движение игрока</h1>
+    <p class="lead">
+      Первое, что делает любой FPS — двигает персонажа от первого лица. В Godot это
+      <code>CharacterBody3D</code> + <code>move_and_slide()</code>. Разберём весь файл
+      <code>player_movement.gd</code> строка за строкой.
+    </p>
+
+    <h2 id="characterbody">CharacterBody3D</h2>
+    <p>
+      <code>CharacterBody3D</code> — это кинематическое тело. В отличие от
+      <code>RigidBody3D</code>, им управляешь ты: сам считаешь вектор <code>velocity</code>
+      и вызываешь <code>move_and_slide()</code>, который двигает тело и разруливает столкновения
+      (скольжение вдоль стен, ступеньки, наклоны).
+    </p>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        Это прямой аналог <code>CharacterController</code>. Разница в том, что в Godot ты
+        задаёшь <b>скорость</b>, а не смещение за кадр: <code>velocity</code> — это метры в
+        секунду, а движок сам умножает на дельту.
+      </p>
+    </div>
+
+    <h2 id="input">Ввод: оси действий</h2>
+    <p>
+      В проекте настроены действия (Actions): <code>key_left</code>, <code>key_right</code>,
+      <code>key_forward</code>, <code>key_backwards</code>, <code>sprint</code>. Они заданы в
+      <code>project.godot</code> в секции <code>[input]</code>.
+    </p>
+    <p>
+      <code>Input.get_axis(negative, positive)</code> возвращает число от -1 до 1 — удобно для
+      WASD. Это аналог <code>Input.GetAxis</code>.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/player_movement.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">extends Node
+
+@onready var player : CharacterBody3D = get_parent()
+@onready var controller : Node = player
+
+var camera : Camera3D
+
+func _ready() -> void:
+	camera = player.get_node("Camera3D")
+
+func _physics_process(_delta: float) -> void:
+	var input_dir := Vector2(
+		Input.get_axis("key_left", "key_right"),
+		Input.get_axis("key_backwards", "key_forward")
+	)
+
+	var direction := Vector3(input_dir.x, 0.0, input_dir.y).normalized()
+
+	var forward := -camera.global_transform.basis.z
+	var right := camera.global_transform.basis.x
+	forward.y = 0.0
+	right.y = 0.0
+	forward = forward.normalized()
+	right = right.normalized()
+
+	var move_dir := (right * direction.x + forward * direction.z)
+
+	var speed = controller.move_speed
+	if Input.is_action_pressed("sprint"):
+		speed *= controller.sprint_multiplier
+
+	player.velocity = move_dir * speed
+	player.move_and_slide()</code></pre>
+    </div>
+
+    <h2 id="walkthrough">Разбор по шагам</h2>
+
+    <h3>1. Читаем ввод в 2D</h3>
+    <p>
+      <code>input_dir.x</code> — это A/D, <code>input_dir.y</code> — S/W. Получается вектор в
+      «плоскости клавиатуры», где x — влево/вправо, y — назад/вперёд.
+    </p>
+
+    <h3>2. Превращаем в 3D-направление</h3>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">фрагмент</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">var direction := Vector3(input_dir.x, 0.0, input_dir.y).normalized()</code></pre>
+    </div>
+    <p>
+      Обрати внимание: <code>input_dir.y</code> уезжает в <b>ось Z</b> (вперёд-назад в 3D), а Y
+      остаётся нулём — мы не летаем. <code>normalized()</code> нужен, чтобы по диагонали
+      (W+D) скорость не была больше, чем при движении в одну сторону.
+    </p>
+
+    <h3>3. Берём базис камеры</h3>
+    <p>
+      <code>basis.z</code> — «взгляд» камеры, поэтому вперёд — это <code>-basis.z</code>.
+      <code>basis.x</code> — вправо. Обе оси обнуляем по Y, чтобы ходьба была строго
+      горизонтальной, даже когда смотришь в пол или в потолок.
+    </p>
+
+    <div class="callout tip">
+      <div class="callout-title">Почему от камеры, а не от игрока?</div>
+      <p>
+        Игрок поворачивается вместе с камерой по Y (см. главу 05), так что для горизонтального
+        взгляда это одно и то же. Но брать базис камеры — надёжнее и сразу даёт правильное
+        направление «куда я смотрю».
+      </p>
+    </div>
+
+    <h3>4. Складываем и применяем</h3>
+    <p>
+      <code>right * direction.x + forward * direction.z</code> — это и есть мировое направление
+      движения. Умножаем на скорость (с учётом спринта) и отдаём движку:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">фрагмент</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">player.velocity = move_dir * speed
+player.move_and_slide()</code></pre>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">Тут нет гравитации</div>
+      <p>
+        Скрипт задаёт <code>velocity</code> целиком, включая <code>velocity.y = 0</code>.
+        Гравитации в проекте нет — пол плоский, и падать некуда. Если захочешь прыжки,
+        добавь <code>velocity.y -= gravity * delta</code> и обработку <code>is_on_floor()</code>.
+      </p>
+    </div>
+
+    <h2 id="demo">Интерактив: откуда берётся направление</h2>
+    <p>
+      Крути поворот камеры и жми <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. Слева — вид
+      сверху: зелёная стрелка — взгляд камеры, синие — оси, жёлтая — итоговое движение.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>move_dir = right * x + forward * z</span></div>
+      <div class="demo-body">
+        <canvas id="move-canvas" data-h="320"></canvas>
+        <div class="demo-controls">
+          <label>Поворот камеры
+            <input type="range" id="yaw" min="-180" max="180" value="0" step="1">
+          </label>
+          <span class="muted">или <kbd>Q</kbd>/<kbd>E</kbd> — вращать, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> — идти</span>
+        </div>
+        <div class="demo-readout" id="move-readout"></div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Почему движение считается в <code>_physics_process</code>, а не в <code>_process</code>?</p>
+      <button class="opt" data-correct="true" data-explain="Физика идёт с фиксированным шагом, поэтому move_and_slide() ведёт себя стабильно при любом FPS.">Потому что физика работает с фиксированным шагом</button>
+      <button class="opt" data-explain="_process тоже вызывается каждый кадр, разницы в «скорости кода» нет.">Потому что _process медленнее</button>
+      <button class="opt" data-explain="_physics_process не привязан к RigidBody3D.">Потому что иначе не работает RigidBody3D</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Зачем нужен <code>.normalized()</code> у <code>direction</code>?</p>
+      <button class="opt" data-explain="Он не меняет оси и не убирает Y — Y уже равен нулю.">Чтобы обнулить ось Y</button>
+      <button class="opt" data-correct="true" data-explain="Без нормализации диагональ W+D дала бы вектор длиной ~1.41, и игрок бежал бы быстрее.">Чтобы диагональ не была быстрее прямой</button>
+      <button class="opt" data-explain="normalized() не связан со скоростью напрямую.">Чтобы применить спринт</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Почему <code>forward</code> — это <code>-camera.basis.z</code>?</p>
+      <button class="opt" data-correct="true" data-explain="В Godot у камеры взгляд направлен вдоль -Z, поэтому «вперёд» = минус basis.z.">Потому что камера смотрит вдоль -Z</button>
+      <button class="opt" data-explain="basis.z — это «назад» относительно взгляда, а не вверх.">Потому что Z — вертикальная ось</button>
+      <button class="opt" data-explain="Дело не в скорости, а в системе координат камеры.">Потому что скорость отрицательная</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-04">
+      <label for="done-04">Я разобрался с главой 04 — движение игрока</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("move-canvas");
+  var slider = document.getElementById("yaw");
+  var readout = document.getElementById("move-readout");
+  if (!canvas || !slider) return;
+
+  var view = NP.fitCanvas(canvas);
+  var keys = {};
+  var yaw = 0;
+
+  function onKey(e, down) {
+    var map = { KeyW: "w", KeyA: "a", KeyS: "s", KeyD: "d", KeyQ: "q", KeyE: "e" };
+    var k = map[e.code];
+    if (!k) return;
+    keys[k] = down;
+    if (down) e.preventDefault();
+  }
+  document.addEventListener("keydown", function (e) { onKey(e, true); });
+  document.addEventListener("keyup", function (e) { onKey(e, false); });
+  slider.addEventListener("input", function () { yaw = parseFloat(slider.value); });
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+    var cx = view.w / 2;
+    var cy = view.h / 2 + 10;
+    var R = Math.min(view.w, view.h) * 0.32;
+
+    if (keys.q) { yaw -= 1.6; slider.value = Math.round(yaw); }
+    if (keys.e) { yaw += 1.6; slider.value = Math.round(yaw); }
+
+    // сетка
+    ctx.strokeStyle = "#141c26";
+    ctx.lineWidth = 1;
+    for (var gx = cx % 40; gx < view.w; gx += 40) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, view.h); ctx.stroke();
+    }
+    for (var gy = cy % 40; gy < view.h; gy += 40) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(view.w, gy); ctx.stroke();
+    }
+
+    var rad = yaw * Math.PI / 180;
+    // forward в экранных координатах: world X → screen x, world Z → screen y (вид сверху)
+    var fwd = { x: Math.sin(rad), y: -Math.cos(rad) };
+    var rgt = { x: Math.cos(rad), y: Math.sin(rad) };
+
+    // подписи осей
+    ctx.font = "12px monospace";
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.fillText("вид сверху", 12, 20);
+
+    // стрелка взгляда камеры
+    NP.arrow(ctx, cx, cy, cx + fwd.x * R * 1.15, cy + fwd.y * R * 1.15, NP.COLORS.green, 3);
+    ctx.fillStyle = NP.COLORS.green;
+    ctx.fillText("forward (-basis.z)", cx + fwd.x * R * 1.25 - 40, cy + fwd.y * R * 1.25 - 6);
+
+    // right
+    NP.arrow(ctx, cx, cy, cx + rgt.x * R * 0.8, cy + rgt.y * R * 0.8, NP.COLORS.accent2, 2);
+    ctx.fillStyle = NP.COLORS.accent2;
+    ctx.fillText("right (basis.x)", cx + rgt.x * R * 0.8 + 6, cy + rgt.y * R * 0.8 + 4);
+
+    // ввод
+    var ix = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
+    var iz = (keys.w ? 1 : 0) - (keys.s ? 1 : 0);
+    var dir = { x: ix, y: iz };
+    var len = Math.hypot(dir.x, dir.y);
+    if (len > 0) { dir.x /= len; dir.y /= len; }
+
+    // итоговое движение: right*dir.x + forward*dir.y  (dir.y = direction.z)
+    var mv = {
+      x: rgt.x * dir.x + fwd.x * dir.y,
+      y: rgt.y * dir.x + fwd.y * dir.y
+    };
+
+    if (len > 0) {
+      NP.arrow(ctx, cx, cy, cx + mv.x * R * 1.5, cy + mv.y * R * 1.5, NP.COLORS.yellow, 4);
+      ctx.fillStyle = NP.COLORS.yellow;
+      ctx.fillText("move_dir", cx + mv.x * R * 1.5 + 8, cy + mv.y * R * 1.5);
+    }
+
+    // игрок
+    ctx.fillStyle = "#0f1620";
+    ctx.strokeStyle = "#e6edf3";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#e6edf3";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("Player", cx, cy + 4);
+    ctx.textAlign = "left";
+
+    if (readout) {
+      readout.textContent =
+        "input_dir     = Vector2(" + ix + ", " + iz + ")\n" +
+        "direction     = Vector3(" + (len ? dir.x.toFixed(2) : "0.00") + ", 0.0, " + (len ? dir.y.toFixed(2) : "0.00") + ")\n" +
+        "move_dir      = (" + mv.x.toFixed(2) + ", 0.0, " + mv.y.toFixed(2) + ")\n" +
+        "speed         = 5.0" + (keys.q || keys.e ? "" : "") + "\n" +
+        "velocity      = move_dir * speed = (" + (mv.x * 5).toFixed(2) + ", 0.0, " + (mv.y * 5).toFixed(2) + ")";
+    }
+  }
+
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

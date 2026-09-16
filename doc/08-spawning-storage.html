@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08. Спавн и хранение — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="08-spawning-storage">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 08</div>
+    <h1>Спавн и хранение</h1>
+    <p class="lead">
+      Стол создаёт бумажки из сцены-префаба, а ящики ловят их зоной <code>Area3D</code>,
+      считают и либо принимают, либо швыряют обратно игроку. Разберём все три файла.
+    </p>
+
+    <h2 id="creator">1. Спавн: стол-раздатчик</h2>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Creating Table/paper_creator.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">extends Node3D
+
+@export var paper_scene : PackedScene
+@export var variation_x : Vector2
+@export var variation_y : Vector2
+
+@export var initial_center_pos : Vector3 = Vector3(-0.8,4.356,0)
+
+func spawn_paper() -> void:
+	var paper := paper_scene.instantiate()
+	paper.paper_type = randi_range(1, 4)
+	paper.add_to_group("paper")
+	add_child(paper)
+	paper.position = _get_random_position()
+
+func _get_random_position() -> Vector3:
+	var new_pos := initial_center_pos
+	new_pos.x += randf_range(variation_x.x,variation_x.y)
+	new_pos.z += randf_range(variation_y.x,variation_y.y)
+	return new_pos</code></pre>
+    </div>
+    <p>
+      <code>@export var paper_scene : PackedScene</code> — в инспекторе сюда перетаскивают
+      <code>paper.tscn</code>. Это классический «префаб-слот» из Unity.
+    </p>
+    <ul>
+      <li><code>instantiate()</code> создаёт узел, но он ещё не в дереве.</li>
+      <li><code>add_child()</code> добавляет его как ребёнка — только теперь он живёт в мире.</li>
+      <li>Позиция задаётся <b>после</b> добавления, потому что до этого узел не в дереве.</li>
+      <li><code>randi_range(1, 4)</code> даёт случайный тип; <code>randf_range</code> — случайное число с плавающей точкой.</li>
+    </ul>
+
+    <div class="callout warn">
+      <div class="callout-title">Частая ошибка новичка</div>
+      <p>
+        <code>paper_scene.instantiate()</code> без <code>add_child()</code> — узел существует,
+        но не отображается и не обрабатывается. Это как создать GameObject и забыть про
+        <code>Instantiate</code> в сцену.
+      </p>
+    </div>
+
+    <h2 id="button">2. Кнопка: анимация и await</h2>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Creating Table/table_button_press.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">extends Node3D
+
+@onready var moving_part : MeshInstance3D = $"Moving Part"
+@onready var creator : Node3D = get_parent().get_node("Paper Creator")
+
+@export var initial_position : float = 0.154
+@export var minimum_position : float = 0.084
+@export var wait_time : float = 0.3
+
+var _is_pressed : bool = false
+
+func interact():
+	if _is_pressed:
+		return
+	_is_pressed = true
+
+	moving_part.position.y = minimum_position
+	creator.spawn_paper()
+	await get_tree().create_timer(wait_time).timeout
+
+	moving_part.position.y = initial_position
+	_is_pressed = false</code></pre>
+    </div>
+    <p>
+      Interactor не знает, что такое кнопка — он просто вызывает <code>interact()</code> у
+      узла в группе <code>"button"</code>. Это «утиная типизация»: важен метод, а не тип.
+      Флаг <code>_is_pressed</code> не даёт спамить кнопкой, пока идёт анимация.
+    </p>
+
+    <h2 id="storage">3. Ящик: Area3D и сигнал body_entered</h2>
+    <p>
+      <code>Area3D</code> — это зона-триггер. Она не мешает движению, но сообщает, когда в неё
+      что-то вошло. Подключение сигнала происходит в <code>_ready()</code>:
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Storage/paper_storage.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@onready var detect_area : Area3D = $DetectArea
+@onready var count_label : Label3D = $CountLabel
+@onready var type_label : Label3D = $TypeLabel
+
+@export var paper_type : int = 1
+@export var throw_speed : float = 10.0
+@export var plus_one_label_scene : PackedScene
+
+var count : int = 0
+
+func _ready() -> void:
+	detect_area.body_entered.connect(_on_body_entered)
+	type_label.text = str(paper_type)
+	_update_label()
+
+func _on_body_entered(body: Node3D) -> void:
+	if not body.is_in_group("paper"):
+		return
+	var is_same := _is_same_paper_type(body)
+	if is_same:
+		count += 1
+		body.queue_free()
+		_update_label()
+		_spawn_plus_one_label()
+	else:
+		_throw_toward_player(body)
+
+func _is_same_paper_type(paper : Node3D) -> bool:
+	return paper.get_paper_type() == paper_type</code></pre>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        <code>detect_area.body_entered.connect(_on_body_entered)</code> — это аналог
+        <code>OnTriggerEnter</code>, но подключённый в коде. <code>body_entered</code> — сигнал
+        самого <code>Area3D</code>, его не надо объявлять, он уже есть у узла.
+      </p>
+    </div>
+
+    <h3>Почему <code>queue_free()</code>, а не «просто удалить»?</h3>
+    <p>
+      Мы находимся внутри обработчика физического сигнала. Удалять узел прямо сейчас
+      небезопасно — движок ещё работает с ним. <code>queue_free()</code> ставит удаление в
+      очередь до конца кадра.
+    </p>
+
+    <h3>Возврат чужой бумаги</h3>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Storage/paper_storage.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _throw_toward_player(paper : Node3D) -> void:
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	if player == null:
+		return
+	var dir := (player.global_position - paper.global_position).normalized()
+	dir.y = absf(dir.y)
+	paper.set_deferred("linear_velocity", dir * throw_speed)</code></pre>
+    </div>
+    <ul>
+      <li><code>get_first_node_in_group("player")</code> — как <code>FindWithTag</code>, но для групп.</li>
+      <li><code>dir.y = absf(dir.y)</code> — заставляет бумагу лететь вверх, а не в пол.</li>
+      <li><code>set_deferred("linear_velocity", ...)</code> — «изменить свойство, когда движок будет готов». Физику нельзя менять прямо в колбэке столкновения.</li>
+    </ul>
+
+    <h2 id="demo">Интерактив: ящики и типы</h2>
+    <p>
+      Наспавни бумажек, выбери одну и кликни по ящику. Совпал тип — ящик примет и покажет
+      «+1». Не совпал — бумага полетит обратно.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>body_entered → _on_body_entered</span></div>
+      <div class="demo-body">
+        <canvas id="storage-canvas" data-h="340" style="cursor:pointer;"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="spawn-paper">Нажать кнопку (spawn_paper)</button>
+          <button type="button" id="clear-papers">Удалить все бумажки</button>
+        </div>
+        <div class="demo-readout" id="storage-readout"></div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Почему <code>paper.position</code> задаётся после <code>add_child()</code>?</p>
+      <button class="opt" data-correct="true" data-explain="До добавления в дерево узел ещё не часть сцены, поэтому позицию осмысленно задавать после add_child().">Потому что до add_child() узел ещё не в дереве сцены</button>
+      <button class="opt" data-explain="instantiate() не задаёт позицию сам.">Потому что instantiate() стирает позицию</button>
+      <button class="opt" data-explain="Физика тут ни при чём — вопрос про иерархию.">Потому что иначе не включится физика</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Как ящик узнаёт, что в него попала бумага?</p>
+      <button class="opt" data-explain="Это делается сигналом Area3D, а не опросом в _process.">Каждый кадр проверяет расстояние до бумаг</button>
+      <button class="opt" data-correct="true" data-explain="DetectArea (Area3D) испускает body_entered, подключённый в _ready().">Через сигнал body_entered у Area3D</button>
+      <button class="opt" data-explain="Коллизия не вызывается, потому что Bin имеет mask = 0.">Через столкновение Bin с бумагой</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Зачем <code>set_deferred("linear_velocity", ...)</code> вместо прямого присваивания?</p>
+      <button class="opt" data-explain="Это не ускорение — это про безопасность изменения.">Чтобы бумага летела быстрее</button>
+      <button class="opt" data-correct="true" data-explain="Мы внутри обработчика физического сигнала; менять физику нужно отложенно, когда движок будет готов.">Потому что нельзя менять физику прямо в колбэке сигнала</button>
+      <button class="opt" data-explain="Гравитация управляется gravity_scale.">Чтобы отключить гравитацию бумаги</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-08">
+      <label for="done-08">Я разобрался с главой 08 — спавн и хранение</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("storage-canvas");
+  var spawnBtn = document.getElementById("spawn-paper");
+  var clearBtn = document.getElementById("clear-papers");
+  var readout = document.getElementById("storage-readout");
+  if (!canvas) return;
+
+  var view = NP.fitCanvas(canvas);
+  var papers = [];
+  var selected = null;
+  var counts = [0, 0, 0, 0];
+  var floats = [];
+  var bins = [];
+
+  var COLORS = [NP.COLORS.orange, NP.COLORS.accent2, NP.COLORS.purple, NP.COLORS.pink];
+
+  function layout() {
+    var n = 4;
+    var gap = 12;
+    var w = (view.w - 40 - gap * (n - 1)) / n;
+    bins = [];
+    for (var i = 0; i < n; i++) {
+      bins.push({ x: 20 + i * (w + gap), y: view.h - 120, w: w, h: 100, type: i + 1 });
+    }
+  }
+  layout();
+
+  function spawn() {
+    var type = 1 + Math.floor(Math.random() * 4);
+    papers.push({
+      type: type,
+      x: 40 + Math.random() * (view.w - 80),
+      y: 40 + Math.random() * 60,
+      tx: 40 + Math.random() * (view.w - 80),
+      ty: 120 + Math.random() * 60,
+      flying: false
+    });
+    log("spawn_paper(): paper_type = " + type + ", add_to_group(\"paper\")");
+  }
+
+  function log(msg) { readout.textContent = msg + "\n" + counts.map(function (c, i) { return "Ящик " + (i + 1) + ": " + c; }).join("   "); }
+
+  spawnBtn.addEventListener("click", spawn);
+  clearBtn.addEventListener("click", function () {
+    papers = [];
+    selected = null;
+    log("queue_free() для всех бумажек");
+  });
+
+  canvas.addEventListener("click", function (e) {
+    var r = canvas.getBoundingClientRect();
+    var mx = e.clientX - r.left;
+    var my = e.clientY - r.top;
+
+    // клик по бумаге
+    for (var i = papers.length - 1; i >= 0; i--) {
+      var p = papers[i];
+      if (!p.flying && Math.abs(mx - p.x) < 22 && Math.abs(my - p.y) < 14) {
+        selected = p;
+        log("Выбрана бумага типа " + p.type + ". Теперь кликни по ящику.");
+        return;
+      }
+    }
+
+    // клик по ящику
+    for (var b = 0; b < bins.length; b++) {
+      var bin = bins[b];
+      if (mx > bin.x && mx < bin.x + bin.w && my > bin.y && my < bin.y + bin.h) {
+        if (!selected) { log("Сначала выбери бумагу кликом по ней."); return; }
+        if (selected.type === bin.type) {
+          counts[b]++;
+          floats.push({ x: bin.x + bin.w / 2, y: bin.y - 6, life: 1, text: "+1" });
+          var idx = papers.indexOf(selected);
+          if (idx !== -1) papers.splice(idx, 1);
+          log("body_entered: тип совпал → count += 1, queue_free(), +1 label");
+          selected = null;
+        } else {
+          selected.flying = true;
+          selected.vx = -6 - Math.random() * 3;
+          selected.vy = -3;
+          log("body_entered: тип НЕ совпал → _throw_toward_player(), set_deferred(\"linear_velocity\")");
+          selected = null;
+        }
+        return;
+      }
+    }
+  });
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+
+    // стол/потолок
+    ctx.fillStyle = "#0f1620";
+    ctx.fillRect(0, 0, view.w, 14);
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.font = "11px monospace";
+    ctx.fillText("Paper Creator (спавн сверху)", 10, 10);
+
+    // ящики
+    bins.forEach(function (bin, i) {
+      ctx.fillStyle = "#0f1620";
+      ctx.strokeStyle = selected ? "rgba(108,196,242,0.6)" : "#26313d";
+      ctx.lineWidth = selected ? 2 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(bin.x, bin.y + 12);
+      ctx.lineTo(bin.x, bin.y + bin.h);
+      ctx.lineTo(bin.x + bin.w, bin.y + bin.h);
+      ctx.lineTo(bin.x + bin.w, bin.y + 12);
+      ctx.stroke();
+      ctx.fill();
+
+      ctx.fillStyle = COLORS[i];
+      ctx.font = "bold 13px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("тип " + bin.type, bin.x + bin.w / 2, bin.y + 40);
+      ctx.fillStyle = "#e6edf3";
+      ctx.font = "bold 20px system-ui";
+      ctx.fillText(String(counts[i]), bin.x + bin.w / 2, bin.y + 72);
+      ctx.textAlign = "left";
+    });
+
+    // бумаги
+    papers.forEach(function (p) {
+      if (p.flying) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < -30 || p.y < -30) {
+          var idx = papers.indexOf(p);
+          if (idx !== -1) papers.splice(idx, 1);
+          return;
+        }
+      } else {
+        p.x += (p.tx - p.x) * 0.08;
+        p.y += (p.ty - p.y) * 0.08;
+      }
+      ctx.fillStyle = COLORS[p.type - 1];
+      ctx.globalAlpha = (p === selected) ? 1 : 0.9;
+      ctx.fillRect(p.x - 20, p.y - 13, 40, 26);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = p === selected ? "#fff" : "#0b0f14";
+      ctx.lineWidth = p === selected ? 2 : 1;
+      ctx.strokeRect(p.x - 20, p.y - 13, 40, 26);
+      ctx.fillStyle = "#0b0f14";
+      ctx.font = "bold 12px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(String(p.type), p.x, p.y + 4);
+      ctx.textAlign = "left";
+    });
+
+    // +1
+    floats.forEach(function (f) {
+      f.y -= 0.6;
+      f.life -= 0.012;
+      ctx.globalAlpha = Math.max(0, f.life);
+      ctx.fillStyle = NP.COLORS.green;
+      ctx.font = "bold 22px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.textAlign = "left";
+      ctx.globalAlpha = 1;
+    });
+    floats = floats.filter(function (f) { return f.life > 0; });
+  }
+
+  log("Готово. Наспавни бумажек и раскладывай их по типам.");
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

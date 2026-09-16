@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02. Дерево сцен и узлы — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="02-scene-tree">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 02</div>
+    <h1>Дерево сцен и узлы</h1>
+    <p class="lead">
+      Разберём структуру проекта так, как её видит Godot. Когда ты поймёшь, из каких узлов
+      собраны игрок, бумажка и ящик — код перестанет быть набором магии.
+    </p>
+
+    <h2 id="world">Корневая сцена: World.tscn</h2>
+    <p>
+      Точка входа игры. В <code>project.godot</code> указано <code>run/main_scene</code> — это
+      <code>Scenes/World.tscn</code>. Внутри неё почти всё — экземпляры других сцен:
+    </p>
+
+    <ul class="tree">
+      <li><span class="node-name">World</span><span class="node-type">Node3D</span>
+        <ul>
+          <li><span class="node-name">Floor</span><span class="node-type">Node3D</span>
+            <ul><li><span class="node-name">Floor</span><span class="node-type">StaticBody3D</span></li></ul>
+          </li>
+          <li><span class="node-name">WorldEnvironment</span><span class="node-type">WorldEnvironment</span>
+            <ul><li><span class="node-name">DirectionalLight3D</span><span class="node-type">DirectionalLight3D</span></li></ul>
+          </li>
+          <li><span class="node-name">Player</span><span class="node-type">CharacterBody3D</span><span class="badge script">Player.tscn</span></li>
+          <li><span class="node-name">Paper Creating Table</span><span class="node-type">Node3D</span><span class="badge script">paper_creating_table.tscn</span></li>
+          <li><span class="node-name">Paper Storage</span><span class="node-type">Node3D</span><span class="badge script">paper_storage.tscn</span></li>
+          <li><span class="node-name">Paper Storage2..4</span><span class="node-type">Node3D</span><span class="badge script">paper_storage.tscn</span></li>
+          <li><span class="node-name">DebugMenu</span><span class="node-type">CanvasLayer</span><span class="badge script">DebugMenu.tscn</span></li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        <code>WorldEnvironment</code> — это аналог настройки Lighting/Environment: небо, туман,
+        ambient. В проекте он задаёт тёмный фон и туман
+        (<code>fog_enabled = true</code>, <code>fog_depth_end = 10</code>).
+      </p>
+    </div>
+
+    <p>
+      Обрати внимание: четыре ящика — это <b>один и тот же</b> <code>paper_storage.tscn</code>,
+      вставленный четыре раза. Отличаются они только свойством <code>paper_type</code>,
+      которое выставлено в инспекторе: 1, 2, 3, 4.
+    </p>
+
+    <h2 id="player">Сцена игрока: Player.tscn</h2>
+    <p>
+      Игрок собран по принципу «каждое поведение — отдельный узел со своим скриптом».
+      Это очень Godot-ный подход.
+    </p>
+
+    <ul class="tree">
+      <li><span class="node-name">Player</span><span class="node-type">CharacterBody3D</span>
+        <span class="badge script">player_controller.gd</span><span class="badge group">player</span>
+        <ul>
+          <li><span class="node-name">MeshInstance3D</span><span class="node-type">MeshInstance3D</span></li>
+          <li><span class="node-name">CollisionShape3D</span><span class="node-type">CollisionShape3D</span></li>
+          <li><span class="node-name">Camera3D</span><span class="node-type">Camera3D</span><span class="badge script">camera_rotator.gd</span>
+            <ul><li><span class="node-name">HoldPoint</span><span class="node-type">Node3D</span></li></ul>
+          </li>
+          <li><span class="node-name">Node</span><span class="node-type">Node</span><span class="badge script">player_movement.gd</span></li>
+          <li><span class="node-name">Interactor</span><span class="node-type">Node</span><span class="badge script">player_interactor.gd</span></li>
+          <li><span class="node-name">UI</span><span class="node-type">CanvasLayer</span><span class="badge script">interaction_prompt.gd</span></li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-title">Зачем разделять?</div>
+      <p>
+        <code>player_movement.gd</code> лежит не на самом <code>Player</code>, а на дочернем
+        <code>Node</code>. Так автор разнёс ответственность: корень хранит настройки
+        (<code>move_speed</code>, чувствительность), а отдельные узлы — логику движения,
+        взаимодействия и обзора. В Unity это выглядело бы как несколько MonoBehaviour
+        на одном GameObject.
+      </p>
+    </div>
+
+    <h2 id="layers">Слои коллизий</h2>
+    <p>
+      В Godot у каждого физического тела есть <code>collision_layer</code> («кто я») и
+      <code>collision_mask</code> («с кем я сталкиваюсь»). Это битовые маски — как Layers в Unity,
+      только задаются числом.
+    </p>
+    <table>
+      <thead><tr><th>Объект</th><th>Layer</th><th>Mask</th><th>Смысл</th></tr></thead>
+      <tbody>
+        <tr><td>Floor</td><td>1</td><td>1</td><td>Обычный статичный пол.</td></tr>
+        <tr><td>Player</td><td>2</td><td>1</td><td>Персонаж на своём слое.</td></tr>
+        <tr><td>Paper</td><td>4</td><td>5</td><td>Бумага видит пол (1) и другие тела (4).</td></tr>
+        <tr><td>Bin (ящик)</td><td>1</td><td>0</td><td>Статика, сама ни с кем не сталкивается.</td></tr>
+        <tr><td>DetectArea</td><td>0</td><td>4</td><td>Зона ловит только бумагу (слой 4).</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">
+      Значения <code>1 / 2 / 4</code> — это степени двойки: 1 = слой 1, 2 = слой 2, 4 = слой 3.
+      Маска 5 = 1 + 4, то есть «слои 1 и 3».
+    </p>
+
+    <h2 id="groups">Группы</h2>
+    <p>
+      Группы — это теги Unity, но гибче: узел может быть в нескольких группах, а искать можно
+      сразу всех. В проекте используются три группы:
+    </p>
+    <ul>
+      <li><code>"player"</code> — на узле Player;</li>
+      <li><code>"button"</code> — на кнопке стола;</li>
+      <li><code>"paper"</code> — добавляется бумажкам в рантайме через <code>add_to_group()</code>.</li>
+    </ul>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Creating Table/paper_creator.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func spawn_paper() -> void:
+	var paper := paper_scene.instantiate()
+	paper.paper_type = randi_range(1, 4)
+	paper.add_to_group("paper")
+	add_child(paper)
+	paper.position = _get_random_position()</code></pre>
+    </div>
+
+    <h2 id="explorer">Интерактив: исследователь сцены</h2>
+    <p>Переключай сцены и кликай по узлам — увидишь, зачем каждый из них нужен.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>Дерево узлов</span></div>
+      <div class="demo-body">
+        <div class="demo-controls" id="scene-tabs"></div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:12px;">
+          <div id="scene-tree" class="tree" style="margin:0;"></div>
+          <div id="node-info" class="demo-readout" style="margin:0;">Кликни по узлу слева.</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Где хранится <code>move_speed</code> игрока?</p>
+      <button class="opt" data-correct="true" data-explain="Настройки лежат на корневом узле Player (player_controller.gd), а движение читает их через controller.move_speed.">На корне Player, в player_controller.gd</button>
+      <button class="opt" data-explain="В player_movement.gd лежит только логика, а сами значения — на корне.">В player_movement.gd</button>
+      <button class="opt" data-explain="Таких глобальных настроек в проекте нет.">В project.godot</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Что делает <code>paper.add_to_group("paper")</code>?</p>
+      <button class="opt" data-explain="Это не визуальная группировка, а логическая метка для поиска.">Группирует бумажки в редакторе для удобства</button>
+      <button class="opt" data-correct="true" data-explain="По группе \"paper\" ищут бумажки: get_nodes_in_group(\"paper\"), а Interactor проверяет is_in_group(\"paper\").">Помечает узел, чтобы его можно было найти по группе</button>
+      <button class="opt" data-explain="На коллизии группы не влияют — для этого есть слои.">Меняет слой коллизии на 4</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Почему <code>paper_storage.tscn</code> можно вставить 4 раза?</p>
+      <button class="opt" data-correct="true" data-explain="Это обычная сцена-«префаб»: каждый экземпляр независим, а paper_type настраивается в инспекторе.">Это сцена-префаб, каждый экземпляр настраивается отдельно</button>
+      <button class="opt" data-explain="Копирование узлов вручную не требуется.">Потому что ящик нельзя скопировать</button>
+      <button class="opt" data-explain="Area3D тут ни при чём.">Потому что DetectArea автоматически создаёт копии</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-02">
+      <label for="done-02">Я разобрался с главой 02 — дерево сцен и узлы</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var SCENES = {
+    world: {
+      label: "World.tscn",
+      root: { name: "World", type: "Node3D", note: "Корень всей игры. Указан как main_scene в project.godot.", children: [
+        { name: "Floor", type: "Node3D", note: "Контейнер пола.", children: [
+          { name: "Floor", type: "StaticBody3D", note: "Экземпляр Prefabs/Floor.tscn. Статичное тело с коллайдером.", children: [] }
+        ]},
+        { name: "WorldEnvironment", type: "WorldEnvironment", note: "Тёмный фон + туман глубиной до 10 метров.", children: [
+          { name: "DirectionalLight3D", type: "DirectionalLight3D", note: "Направленный «солнечный» свет.", children: [] }
+        ]},
+        { name: "Player", type: "CharacterBody3D", scene: "Player.tscn", note: "Игрок. Экземпляр Prefabs/Player.tscn.", children: [] },
+        { name: "Paper Creating Table", type: "Node3D", scene: "paper_creating_table.tscn", note: "Стол-раздатчик бумаги.", children: [] },
+        { name: "Paper Storage", type: "Node3D", scene: "paper_storage.tscn", note: "Ящик для бумаги типа 1.", children: [] },
+        { name: "Paper Storage2", type: "Node3D", scene: "paper_storage.tscn", note: "Тот же ящик, но paper_type = 2.", children: [] },
+        { name: "Paper Storage3", type: "Node3D", scene: "paper_storage.tscn", note: "paper_type = 3.", children: [] },
+        { name: "Paper Storage4", type: "Node3D", scene: "paper_storage.tscn", note: "paper_type = 4.", children: [] },
+        { name: "DebugMenu", type: "CanvasLayer", scene: "DebugMenu.tscn", note: "Панель отладки: спавн и удаление бумаг.", children: [] }
+      ]}
+    },
+    player: {
+      label: "Player.tscn",
+      root: { name: "Player", type: "CharacterBody3D", script: "player_controller.gd", groups: ["player"], note: "Кинематическое тело игрока. Здесь же хранятся настройки: move_speed, sprint_multiplier, mouse_sensitivity, min/max_pitch. В _ready() захватывает курсор.", children: [
+        { name: "MeshInstance3D", type: "MeshInstance3D", note: "Простой куб как визуал игрока.", children: [] },
+        { name: "CollisionShape3D", type: "CollisionShape3D", note: "Коробка 0.3 x 1.8 x 0.3 — коллайдер игрока.", children: [] },
+        { name: "Camera3D", type: "Camera3D", script: "camera_rotator.gd", note: "Камера на высоте ~1.59. Вращает игрока по Y и саму себя по X (pitch).", children: [
+          { name: "HoldPoint", type: "Node3D", note: "Точка перед камерой (z = -0.9), куда прилетает подобранная бумага.", children: [] }
+        ]},
+        { name: "Node", type: "Node", script: "player_movement.gd", note: "Читает ввод WASD и двигает родителя (Player) в _physics_process.", children: [] },
+        { name: "Interactor", type: "Node", script: "player_interactor.gd", note: "Ищет цель рейкастом, подбирает и бросает бумагу, испускает сигналы.", children: [] },
+        { name: "UI", type: "CanvasLayer", script: "interaction_prompt.gd", note: "Слой интерфейса: прицел и подсказка [E]/[G].", children: [
+          { name: "Crosshair", type: "ColorRect", note: "Маленький квадрат в центре экрана.", children: [] },
+          { name: "Label", type: "Label", note: "Текст подсказки внизу экрана.", children: [] }
+        ]}
+      ]}
+    }
+  };
+
+  var tabs = document.getElementById("scene-tabs");
+  var treeBox = document.getElementById("scene-tree");
+  var infoBox = document.getElementById("node-info");
+  if (!tabs || !treeBox || !infoBox) return;
+
+  function renderNode(node) {
+    var li = document.createElement("li");
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.cssText = "background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left;";
+    var html = '<span class="node-name">' + node.name + '</span><span class="node-type">' + node.type + '</span>';
+    if (node.script) html += '<span class="badge script">' + node.script + '</span>';
+    if (node.scene) html += '<span class="badge">' + node.scene + '</span>';
+    if (node.groups) node.groups.forEach(function (g) { html += '<span class="badge group">' + g + '</span>'; });
+    btn.innerHTML = html;
+    btn.addEventListener("click", function () {
+      var lines = [node.name + "  :  " + node.type];
+      if (node.script) lines.push("скрипт: " + node.script);
+      if (node.scene) lines.push("сцена: " + node.scene);
+      if (node.groups) lines.push("группы: " + node.groups.join(", "));
+      lines.push("");
+      lines.push(node.note || "—");
+      infoBox.textContent = lines.join("\n");
+      Array.prototype.forEach.call(treeBox.querySelectorAll("button"), function (b) { b.style.color = ""; });
+      btn.style.color = NP.COLORS.accent2;
+    });
+    li.appendChild(btn);
+    if (node.children && node.children.length) {
+      var ul = document.createElement("ul");
+      node.children.forEach(function (c) { ul.appendChild(renderNode(c)); });
+      li.appendChild(ul);
+    }
+    return li;
+  }
+
+  function showScene(key) {
+    var scene = SCENES[key];
+    treeBox.innerHTML = "";
+    var ul = document.createElement("ul");
+    ul.style.paddingLeft = "0";
+    ul.style.borderLeft = "0";
+    ul.appendChild(renderNode(scene.root));
+    treeBox.appendChild(ul);
+    Array.prototype.forEach.call(tabs.children, function (b) {
+      b.style.borderColor = b.dataset.key === key ? NP.COLORS.accent2 : "var(--border)";
+    });
+    var rootBtn = treeBox.querySelector("button");
+    if (rootBtn) rootBtn.click();
+  }
+
+  Object.keys(SCENES).forEach(function (key) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.dataset.key = key;
+    b.textContent = SCENES[key].label;
+    b.style.cssText = "font-family:var(--sans);font-size:13px;color:var(--text);background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;";
+    b.addEventListener("click", function () { showScene(key); });
+    tabs.appendChild(b);
+  });
+  showScene("world");
+})();
+</script>
+</body>
+</html>

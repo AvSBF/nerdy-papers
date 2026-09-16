@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07. Физика бумаги — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="07-paper-physics">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 07</div>
+    <h1>Физика бумаги</h1>
+    <p class="lead">
+      Бумажка — это <code>RigidBody3D</code>. Она падает, кувыркается и отскакивает. А когда
+      её подбирают, физика на время «выключается» и включается ручной полёт в руку. Это
+      самый интересный файл проекта.
+    </p>
+
+    <h2 id="rigidbody">RigidBody3D vs CharacterBody3D</h2>
+    <table>
+      <thead><tr><th></th><th>RigidBody3D</th><th>CharacterBody3D</th></tr></thead>
+      <tbody>
+        <tr><td>Кто управляет движением</td><td>Физический движок</td><td>Ты (код)</td></tr>
+        <tr><td>Как задать движение</td><td>силы / velocity</td><td>velocity + move_and_slide()</td></tr>
+        <tr><td>Столкновения</td><td>автоматически</td><td>через move_and_slide()</td></tr>
+        <tr><td>Аналог Unity</td><td>Rigidbody</td><td>CharacterController</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="killplane">1. Страховка от падения под пол</h2>
+    <p>
+      Каждый физический шаг Godot вызывает у тела <code>_integrate_forces(state)</code> —
+      это «FixedUpdate» для RigidBody, с доступом к физическому состоянию.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper/paper.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">class_name Paper
+extends RigidBody3D
+
+const KILL_Y : float = -0.5
+
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	if global_position.y < KILL_Y:
+		print("найдена бумага под полом, удаление")
+		queue_free()
+		return
+	# ...</code></pre>
+    </div>
+    <p>
+      Если бумажка провалилась ниже −0.5 метра — удаляем. Простой «kill plane».
+      <code>queue_free()</code> — аналог <code>Destroy(gameObject)</code>, но безопасный:
+      удаление произойдёт в конце кадра.
+    </p>
+
+    <h2 id="pickup">2. Подбор: выключаем физику</h2>
+    <p>
+      Когда игрок жмёт <kbd>E</kbd>, Interactor вызывает <code>pick_up()</code>. Перед этим
+      он сохраняет текущие слои столкновений в метаданные, чтобы потом вернуть их обратно.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper/paper.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func pick_up(target: Node3D, flight_time: float) -> void:
+	set_meta("pickup_layer", collision_layer)
+	set_meta("pickup_mask", collision_mask)
+	collision_layer = 0
+	collision_mask = 0
+	gravity_scale = 0.0
+	can_sleep = false
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	_held = false
+	_flight_target = target
+	_hold_point = target
+	_flight_from = global_position
+	_flight_from_basis = global_basis
+	_flight_progress = 0.0
+	_flight_time = flight_time</code></pre>
+    </div>
+
+    <div class="callout note">
+      <div class="callout-title">set_meta / get_meta</div>
+      <p>
+        Метаданные — это способ прицепить к узлу любые данные «на лету». В проекте так
+        запоминаются слои, чтобы восстановить их при броске. Аналог
+        <code>Dictionary</code> прямо на объекте.
+      </p>
+    </div>
+
+    <h2 id="flight">3. Полёт в руку</h2>
+    <p>
+      Пока <code>_flight_target</code> не <code>null</code>, тело каждый физический шаг
+      принудительно ставится в промежуточную точку между стартом и целью. Прогресс растёт
+      от 0 до 1, а <code>ease()</code> сглаживает движение.
+    </p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper/paper.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">	if _flight_target != null:
+		_flight_progress = minf(_flight_progress + state.step / _flight_time, 1.0)
+		var t := ease(_flight_progress, 0.5)
+
+		var target_pos := _flight_target.global_position + _flight_target.global_basis * hold_offset
+		var tform := state.transform
+		tform.origin = _flight_from.lerp(target_pos, t)
+		tform.basis = _flight_from_basis.slerp(_flight_target.global_basis, t)
+		state.transform = tform
+		state.linear_velocity = Vector3.ZERO
+		state.angular_velocity = Vector3.ZERO
+
+		if _flight_progress >= 1.0:
+			_held = true
+			_flight_target = null
+			type_label.visible = show_label_while_held
+			picked_up.emit(self)</code></pre>
+    </div>
+
+    <p>Что тут важно понять:</p>
+    <ul>
+      <li><code>state.step</code> — длительность физического шага. Делим на <code>_flight_time</code> и получаем прирост прогресса. Аналог <code>Time.fixedDeltaTime</code>.</li>
+      <li><code>lerp</code> — линейная интерполяция позиции; <code>slerp</code> — сферическая интерполяция поворота (плавный разворот).</li>
+      <li>Скорости обнуляются, чтобы движок не «боролся» с нами.</li>
+      <li>Когда прогресс дошёл до 1 — испускается сигнал <code>picked_up</code>, и Interactor добавляет бумагу в стопку.</li>
+    </ul>
+
+    <h2 id="held">4. Удержание</h2>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper/paper.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">	elif _held and _hold_point != null:
+		var tform := _hold_point.global_transform
+		tform.origin += _hold_point.global_basis * hold_offset
+		state.transform = tform
+		state.linear_velocity = Vector3.ZERO
+		state.angular_velocity = Vector3.ZERO</code></pre>
+    </div>
+    <p>
+      В руке бумага каждый шаг «прилипает» к трансформу <code>HoldPoint</code> (дочерний узел
+      камеры) плюс <code>hold_offset</code> — смещение в стопке.
+    </p>
+
+    <h2 id="drop">5. Бросок</h2>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper/paper.gd (фрагмент)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func drop(throw_velocity: Vector3) -> void:
+	var hold_transform := global_transform
+	reparent(get_tree().current_scene)
+	global_transform = hold_transform
+	_held = false
+	_hold_point = null
+	_flight_target = null
+	show_label_while_held = true
+	type_label.visible = false
+	gravity_scale = 1.0
+	can_sleep = true
+	collision_layer = get_meta("pickup_layer", 1)
+	collision_mask = get_meta("pickup_mask", 1)
+	linear_velocity = throw_velocity</code></pre>
+    </div>
+    <p>
+      <code>reparent()</code> переносит бумагу в корень сцены, чтобы она не уехала вместе с
+      рукой. Трансформ сохраняется вручную, а затем возвращается физика, слои и скорость
+      броска.
+    </p>
+
+    <h2 id="demo">Интерактив: полёт бумаги в руку</h2>
+    <p>Нажми «Подобрать» и посмотри на ту же интерполяцию, что в коде. Ползунок меняет <code>PICKUP_TIME</code>.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>lerp + ease(t, 0.5)</span></div>
+      <div class="demo-body">
+        <canvas id="flight-canvas" data-h="280"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick-btn">Подобрать</button>
+          <button type="button" id="reset-paper">Сбросить</button>
+          <label>PICKUP_TIME <input type="range" id="flight-time" min="0.05" max="1.2" value="0.15" step="0.05"></label>
+          <label><input type="checkbox" id="ease-toggle" checked> применять ease()</label>
+        </div>
+        <div class="demo-readout" id="flight-readout"></div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Зачем при подборе выставляется <code>gravity_scale = 0.0</code> и обнуляются слои?</p>
+      <button class="opt" data-correct="true" data-explain="Чтобы физика не тянула бумагу вниз и не сталкивала её с миром, пока она летит в руку и висит там.">Чтобы физика не мешала полёту и удержанию</button>
+      <button class="opt" data-explain="На видимость это не влияет — за неё отвечает type_label.visible.">Чтобы скрыть бумажку</button>
+      <button class="opt" data-explain="Сигнал испускается и без этого.">Чтобы испустить picked_up</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Что делает <code>ease(_flight_progress, 0.5)</code>?</p>
+      <button class="opt" data-explain="Это не задержка, а сглаживание кривой.">Ждёт полсекунды</button>
+      <button class="opt" data-correct="true" data-explain="ease с кривой 0.5 сглаживает начало и конец — движение получается плавным, а не механическим.">Сглаживает прогресс для плавного движения</button>
+      <button class="opt" data-explain="Скорость берётся из throw_speed при броске.">Задаёт скорость броска</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Зачем <code>reparent(get_tree().current_scene)</code> при броске?</p>
+      <button class="opt" data-explain="Удаление — это queue_free().">Чтобы удалить бумагу из памяти</button>
+      <button class="opt" data-correct="true" data-explain="Иначе бумага осталась бы ребёнком HoldPoint и летела бы вместе с рукой. reparent переносит её в мир.">Чтобы бумага не летела вместе с рукой</button>
+      <button class="opt" data-explain="Сигналы не зависят от родителя.">Чтобы отключить сигналы</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-07">
+      <label for="done-07">Я разобрался с главой 07 — физика бумаги</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("flight-canvas");
+  var pickBtn = document.getElementById("pick-btn");
+  var resetBtn = document.getElementById("reset-paper");
+  var timeSlider = document.getElementById("flight-time");
+  var easeToggle = document.getElementById("ease-toggle");
+  var readout = document.getElementById("flight-readout");
+  if (!canvas) return;
+
+  var view = NP.fitCanvas(canvas);
+  var progress = 0;
+  var flying = false;
+  var held = false;
+  var angle = 0;
+
+  function startPos() { return { x: view.w * 0.16, y: view.h * 0.72, a: -0.5 }; }
+  function holdPos() { return { x: view.w * 0.8, y: view.h * 0.34, a: 0 }; }
+
+  pickBtn.addEventListener("click", function () {
+    if (held) return;
+    progress = 0;
+    flying = true;
+    angle = startPos().a;
+  });
+  resetBtn.addEventListener("click", function () {
+    flying = false;
+    held = false;
+    progress = 0;
+  });
+
+  function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+
+    // пол
+    ctx.strokeStyle = "#26313d";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, view.h * 0.85); ctx.lineTo(view.w, view.h * 0.85); ctx.stroke();
+    ctx.fillStyle = "#121a24";
+    ctx.fillRect(0, view.h * 0.85, view.w, view.h * 0.15);
+
+    var from = startPos();
+    var to = holdPos();
+
+    // точка удержания (HoldPoint)
+    ctx.strokeStyle = "rgba(126,231,135,0.4)";
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.arc(to.x, to.y, 22, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = NP.COLORS.green;
+    ctx.font = "11px monospace";
+    ctx.fillText("HoldPoint", to.x - 30, to.y - 30);
+
+    // траектория
+    ctx.strokeStyle = "rgba(108,196,242,0.25)";
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // старт
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.fillText("старт (_flight_from)", from.x - 40, from.y + 30);
+
+    // текущая позиция
+    var raw = progress;
+    var t = easeToggle.checked ? easeInOut(raw) : raw;
+    var x = from.x + (to.x - from.x) * t;
+    var y = from.y + (to.y - from.y) * t;
+    var a = from.a + (to.a - from.a) * t;
+
+    if (flying) {
+      progress += (1 / Math.max(0.0001, parseFloat(timeSlider.value))) * (1 / 60);
+      if (progress >= 1) { progress = 1; flying = false; held = true; }
+    }
+
+    // бумажка
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    ctx.fillStyle = held ? NP.COLORS.green : NP.COLORS.orange;
+    ctx.globalAlpha = held ? 0.9 : 1;
+    ctx.fillRect(-26, -16, 52, 32);
+    ctx.strokeStyle = "#0b0f14";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(26, 0); ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // прогресс-бар
+    var bx = view.w * 0.16, bw = view.w * 0.68, by = view.h * 0.12;
+    ctx.fillStyle = "#0b0f14";
+    ctx.fillRect(bx, by, bw, 8);
+    ctx.fillStyle = NP.COLORS.accent2;
+    ctx.fillRect(bx, by, bw * progress, 8);
+    ctx.fillStyle = NP.COLORS.muted;
+    ctx.font = "11px monospace";
+    ctx.fillText("_flight_progress", bx, by - 8);
+
+    readout.textContent =
+      "progress = " + progress.toFixed(2) + "   t = ease(progress, 0.5) = " + t.toFixed(2) + "\n" +
+      "origin = _flight_from.lerp(target_pos, t)\n" +
+      "basis  = _flight_from_basis.slerp(target_basis, t)\n" +
+      "gravity_scale = " + (held || flying ? "0.0" : "1.0") + "   collision_layer = " + (held || flying ? "0" : "4") + "\n" +
+      (held ? "picked_up.emit(self) → бумага в стопке" : (flying ? "летит в руку..." : "лежит на полу, физика включена"));
+  }
+
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>
