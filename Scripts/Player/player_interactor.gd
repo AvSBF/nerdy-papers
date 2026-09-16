@@ -112,10 +112,11 @@ func _throw_top_paper() -> void:
 	if is_instance_valid(paper):
 		paper.drop(-camera.global_transform.basis.z * throw_speed)
 
-	var tween := create_tween()
-	for i in held_papers.size():
-		var p := held_papers[i]
-		tween.parallel().tween_property(p, "hold_offset", _stack_offset_for_index(i), RISE_TIME)
+	if not held_papers.is_empty():
+		var tween := create_tween()
+		for i in held_papers.size():
+			var p := held_papers[i]
+			tween.parallel().tween_property(p, "hold_offset", _stack_offset_for_index(i), RISE_TIME)
 	_throwing = false
 
 func _update_held_labels() -> void:
