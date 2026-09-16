@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buff Cards — выбор карточек — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 16px 0; }
+  .flow .step {
+    flex: 1 1 160px; background: #161b22; border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; font-size: 13px;
+  }
+  .flow .step b { display: block; color: #e6edf3; margin-bottom: 4px; }
+  .flow .arrow { color: var(--accent); font-size: 20px; padding: 0 2px; }
+  .card-swatch {
+    display: inline-flex; align-items: center; gap: 8px; margin: 4px 0;
+    background: #161b22; border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px;
+  }
+  .card-swatch .stripe { width: 10px; height: 46px; border-radius: 4px; }
+  .card-swatch.green .stripe { background: #29924f; }
+  .card-swatch.red .stripe { background: #a6302c; }
+  .card-swatch .title { font-weight: 700; }
+  .demo-buff { margin: 12px 0; }
+  .demo-buff .demo-head { display: flex; align-items: center; gap: 8px; }
+  .demo-buff .demo-body { padding: 8px 0; }
+  #buff-canvas { width: 100%; }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .legend .g i { background: #29924f; }
+  .legend .r i { background: #a6302c; }
+</style>
+</head>
+<body data-chapter="buff-cards">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>фича: буфф-карточки</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#idea">Идея</a>
+      <a href="#flow">Поток игры</a>
+      <a href="#tree">Дерево сцен</a>
+      <a href="#signal">Сигнал от ящика</a>
+      <a href="#manager">Менеджер карточек</a>
+      <a href="#card">Сама карточка</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+      <a href="#quiz">Проверь себя</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ПЛАН ФИЧИ · ЗАГЛУШКИ</div>
+    <h1>Буфф-карточки после бросков</h1>
+    <p class="lead">
+      Когда игрок закинул нужное количество бумажек в ящики (число каждый раз разное),
+      поверх экрана появляются 3 карточки — зелёные и красная. Игрок кликает одну,
+      карточки уходят, игра продолжается. Баффы пока — заглушки.
+    </p>
+
+    <h2 id="idea">Идея</h2>
+    <p>
+      Это первый настоящий «геймплейный цикл» проекта: механика, которая реагирует на
+      действия игрока и ставит перед ним <b>выбор</b>. Пока баффы ничего не делают, но
+      каркас уже полноценный:
+    </p>
+    <ul>
+      <li>счётчик закинутых бумажек с плавающим порогом;</li>
+      <li>пауза мира и показ карточек;</li>
+      <li>клик по карточке → выбор → игра продолжается.</li>
+    </ul>
+    <p>Зелёная карточка = бафф (плюс), красная = дебафф (минус). Это цветовой язык, который потом наполним настоящими эффектами.</p>
+
+    <div class="card-swatch green"><span class="stripe"></span><div><span class="title">Лёгкие ноги</span><br><small>зелёная · бафф · заглушка</small></div></div>
+    <div class="card-swatch red"><span class="stripe"></span><div><span class="title">Тяжёлые руки</span><br><small>красная · дебафф · заглушка</small></div></div>
+
+    <h2 id="flow">Поток игры</h2>
+    <p>Вся фича — это один цикл из четырёх шагов:</p>
+
+    <div class="flow">
+      <div class="step"><b>1. Бросок</b>Игрок кидает бумажку в ящик, ящик шлёт сигнал <code>paper_deposited</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Порог</b>Менеджер считает броски. Достал плавающее число — срабатывает.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Выбор</b>Игра на паузе, поверх экрана 3 карточки.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>4. Клик</b>Клик по карточке — карточки исчезают, игра продолжается.</div>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        Это аналог <code>GameManager</code> + UI-панели. Сигнал <code>paper_deposited</code> —
+        как <code>UnityEvent</code>, менеджер — как скрипт, подписанный на события, а
+        <code>get_tree().paused</code> — как <code>Time.timeScale = 0</code>.
+      </p>
+    </div>
+
+    <h2 id="tree">Дерево сцен</h2>
+    <p>Два новых файла-сцены в <code>Prefabs/</code>. Карточка — это просто красивый <code>Button</code>:</p>
+    <ul class="tree">
+      <li><span class="node-name">BuffCardUI</span><span class="node-type">CanvasLayer</span><span class="badge script">buff_card_manager.gd</span>
+        <ul>
+          <li><span class="node-name">Overlay</span><span class="node-type">Control</span><span class="badge group">вся панель, скрыта</span>
+            <ul>
+              <li><span class="node-name">Dimmer</span><span class="node-type">ColorRect</span><span class="badge group">затемнение фона</span></li>
+              <li><span class="node-name">Center</span><span class="node-type">CenterContainer</span>
+                <ul>
+                  <li><span class="node-name">Cards</span><span class="node-type">HBoxContainer</span>
+                    <ul>
+                      <li><span class="node-name">BuffCard (×3)</span><span class="node-type">Button</span><span class="badge script">buff_card.gd</span></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    <p>
+      <code>CanvasLayer</code> с <code>layer = 10</code> рисуется поверх 3D и камеры.
+      Менеджер кладёт три карточки в <code>Cards</code> программно, каждый раз заново.
+    </p>
+
+    <h2 id="signal">Сигнал от ящика</h2>
+    <p>
+      Раньше ящик просто увеличивал свой счётчик. Теперь он ещё и сообщает об этом миру.
+      Добавлено три строки:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Storage/paper_storage.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">signal paper_deposited(count: int)
+
+func _ready() -> void:
+	add_to_group("paper_storage")          # менеджер найдёт ящики по группе
+	# ...
+
+func _on_body_entered(body: Node3D) -> void:
+	# ...
+	count += 1
+	body.queue_free()
+	# ...
+	paper_deposited.emit(count)            # оповестить всех подписчиков</code></pre>
+    </div>
+    <p>
+      <code>add_to_group("paper_storage")</code> — это «тег» из Unity: любой узел может
+      найти все ящики через <code>get_tree().get_nodes_in_group(...)</code>.
+    </p>
+
+    <h2 id="manager">Менеджер карточек</h2>
+    <p>Мозг фичи. Считает броски, решает, когда показать карточки, и убирает их после клика.</p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/buff_card_manager.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">extends CanvasLayer
+
+signal card_chosen(card_type: String)
+
+@export var card_scene : PackedScene
+@export var required_min : int = 3      # порог плавающий:
+@export var required_max : int = 6      # каждый раз новый
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS   # работаем даже на паузе
+	overlay.visible = false
+	for storage in get_tree().get_nodes_in_group("paper_storage"):
+		storage.paper_deposited.connect(_on_paper_deposited)
+	_roll_required()
+
+func _on_paper_deposited(_count: int) -> void:
+	if _cards_active:
+		return
+	_deposits_total += 1
+	if _deposits_total >= _required:
+		_show_cards()
+
+func _roll_required() -> void:
+	_required = randi_range(required_min, required_max)</code></pre>
+    </div>
+
+    <p>Показ и уборка карточек — это вкл/выкл паузы и курсора:</p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">buff_card_manager.gd — показ и скрытие</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _show_cards() -> void:
+	_cards_active = true
+	get_tree().paused = true               # мир замирает
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_build_cards()
+	overlay.visible = true
+
+func _on_card_pressed(card: BuffCard) -> void:
+	card_chosen.emit(card.card_type)
+	_hide_cards()
+
+func _hide_cards() -> void:
+	overlay.visible = false
+	get_tree().paused = false              # игра продолжается
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_deposits_total = 0
+	_roll_required()                       # следующий порог — новый
+	_cards_active = false</code></pre>
+    </div>
+    <p>
+      <code>process_mode = PROCESS_MODE_ALWAYS</code> — ключевая строка: на паузе обычные
+      узлы перестают получать ввод, а этот слой продолжает. Иначе кнопки не отреагируют на клик.
+    </p>
+
+    <h2 id="card">Сама карточка</h2>
+    <p>
+      Карточка — это <code>Button</code> с настраиваемым внешним видом. Метод <code>setup()</code>
+      получает словарь с данными и раскрашивает себя в зелёный или красный:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/buff_card.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">class_name BuffCard
+extends Button
+
+signal chosen(card: BuffCard)
+
+const GREEN_COLOR := Color(0.16, 0.55, 0.32)
+const RED_COLOR := Color(0.65, 0.2, 0.18)
+
+func setup(data: Dictionary) -> void:
+	card_type = str(data.get("type", "green"))
+	var color := GREEN_COLOR if card_type == "green" else RED_COLOR
+	top_stripe.color = color
+	type_label.text = "БАФФ" if card_type == "green" else "ДЕБАФФ"
+	title_label.text = str(data.get("title", "Без названия"))
+	desc_label.text = str(data.get("desc", "Заглушка"))</code></pre>
+    </div>
+    <p>
+      Данные — это пул заглушек в менеджере. Пока это просто словари с текстом:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">buff_card_manager.gd — пулы заглушек</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">const GOOD_POOL : Array[Dictionary] = [
+	{"title": "Лёгкие ноги", "desc": "Заглушка. Скорость пока не меняется."},
+	{"title": "Сильный бросок", "desc": "Заглушка. Дальность броска пока не меняется."},
+]
+
+const BAD_POOL : Array[Dictionary] = [
+	{"title": "Тяжёлые руки", "desc": "Заглушка. Скорость пока не меняется."},
+	{"title": "Дрожь в руках", "desc": "Заглушка. Точность пока не меняется."},
+]</code></pre>
+    </div>
+    <p>
+      Позже вместо пула появится <code>Resource</code>-данные (как <code>ScriptableObject</code>),
+      а в <code>card_chosen</code> — подпишется логика реальных баффов.
+    </p>
+
+    <h2 id="demo">Интерактив: цикл карточек</h2>
+    <p>Жми «Закинуть бумажку» и смотри, как работает порог и появление карточек. Порог каждый раз новый.</p>
+
+    <div class="demo demo-buff">
+      <div class="demo-head"><span class="pill">интерактив</span><span>броски → карточки → выбор</span></div>
+      <div class="demo-body">
+        <canvas id="buff-canvas" data-h="300"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="deposit">Закинуть бумажку</button>
+          <button type="button" id="restart">Сброс</button>
+          <span id="readout"></span>
+        </div>
+        <div class="legend">
+          <span class="g"><i></i>бафф (зелёная)</span>
+          <span class="r"><i></i>дебафф (красная)</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Запусти сцену <code>Scenes/World.tscn</code>.</li>
+      <li>Возьми бумажки со стола (клавиша <code>E</code>) и брось в ящик (<code>G</code>).</li>
+      <li>После нужного числа бросков (от 3 до 6, случайно) появятся 3 карточки.</li>
+      <li>Кликни любую — карточки исчезнут, игра продолжится, порог заново случайный.</li>
+      <li>Порог можно покрутить на узле <code>BuffCardUI</code>: <code>required_min</code> / <code>required_max</code>.</li>
+      <li>Быстрая проверка без бросков: открой дебаг-меню (<code>F1</code>) и нажми «Показать карточки» — менеджер вызовет <code>force_show()</code>.</li>
+    </ol>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Зачем нужен <code>process_mode = PROCESS_MODE_ALWAYS</code> на CanvasLayer?</p>
+      <button class="opt" data-explain="Порог и счёт — это не про скорость обработки ввода.">Чтобы карточки рисовались быстрее</button>
+      <button class="opt" data-correct="true" data-explain="На паузе обычные узлы не получают ввод. ALWAYS заставляет слой и кнопки работать, пока get_tree().paused = true.">Чтобы кнопки кликались, пока игра на паузе</button>
+      <button class="opt" data-explain="Курсор переключается через Input.mouse_mode.">Чтобы освободить курсор</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Что делает <code>paper_deposited.emit(count)</code> в ящике?</p>
+      <button class="opt" data-explain="Счётчик увеличивает сам ящик.">Увеличивает счётчик ящика</button>
+      <button class="opt" data-explain="queue_free() удаляет бумагу, а сигнал — про уведомление.">Удаляет бумагу из сцены</button>
+      <button class="opt" data-correct="true" data-explain="Сигнал — это событие: ящик сообщает всем подписчикам, что бумажка засчитана.">Оповещает всех подписчиков о засчитанной бумажке</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Почему порог «плавающий»?</p>
+      <button class="opt" data-correct="true" data-explain="Каждый раз _roll_required() выбирает новое число в диапазоне required_min..required_max.">Каждый цикл _roll_required() выбирает случайное число в диапазоне</button>
+      <button class="opt" data-explain="Порог не зависит от бросков игрока.">Порог зависит от того, сколько бумаг в руке</button>
+      <button class="opt" data-explain="Число меняется из-за физики, а не по задумке.">Это баг округления физики</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-nav">
+      <a class="next" href="../index.html"><span class="dir">К карте обучения →</span>Учебник Nerdy Papers</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script>
+/* ---------- интерактив: броски → карточки → выбор ---------- */
+(function () {
+  var canvas = document.getElementById("buff-canvas");
+  var depositBtn = document.getElementById("deposit");
+  var restartBtn = document.getElementById("restart");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+
+  var view = NP.fitCanvas(canvas);
+  var D = { good: ["Лёгкие ноги", "Сильный бросок", "Второе дыхание"],
+            bad:  ["Тяжёлые руки", "Дрожь в руках", "Туман в голове"] };
+
+  var state = { total: 0, required: 3, active: false, chosen: null, cards: [], alpha: 0, hover: -1 };
+
+  function rollRequired() { state.required = 3 + Math.floor(Math.random() * 4); }
+
+  function newCards() {
+    var types = ["green", "red", "green"];
+    types.sort(function () { return Math.random() - 0.5; });
+    var usedG = [], usedB = [];
+    state.cards = types.map(function (t) {
+      var pool = t === "green" ? D.good : D.bad;
+      var used = t === "green" ? usedG : usedB;
+      var i = Math.floor(Math.random() * pool.length);
+      while (used.indexOf(i) !== -1) i = Math.floor(Math.random() * pool.length);
+      used.push(i);
+      return { type: t, title: pool[i], hover: false };
+    });
+  }
+
+  depositBtn.addEventListener("click", function () {
+    if (state.active) return;
+    state.total++;
+    if (state.total >= state.required) {
+      state.active = true;
+      state.total = 0;
+      newCards();
+    }
+  });
+
+  restartBtn.addEventListener("click", function () {
+    state = { total: 0, required: 3, active: false, chosen: null, cards: [], alpha: 0, hover: -1 };
+    rollRequired();
+  });
+
+  function cardRect(i) {
+    var n = state.cards.length;
+    var cw = 92, ch = 150, gap = 20;
+    var total = n * cw + (n - 1) * gap;
+    var x0 = view.w / 2 - total / 2;
+    var y = view.h / 2 - ch / 2 + 20;
+    return { x: x0 + i * (cw + gap), y: y, w: cw, h: ch };
+  }
+
+  canvas.addEventListener("mousemove", function (e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = (e.clientX - rect.left) * (view.w / rect.width);
+    var my = (e.clientY - rect.top) * (view.h / rect.height);
+    state.hover = -1;
+    if (state.active) {
+      for (var i = 0; i < state.cards.length; i++) {
+        var r = cardRect(i);
+        if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) state.hover = i;
+      }
+    }
+  });
+
+  canvas.addEventListener("click", function (e) {
+    if (!state.active) return;
+    var rect = canvas.getBoundingClientRect();
+    var mx = (e.clientX - rect.left) * (view.w / rect.width);
+    var my = (e.clientY - rect.top) * (view.h / rect.height);
+    for (var i = 0; i < state.cards.length; i++) {
+      var r = cardRect(i);
+      if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+        state.chosen = state.cards[i];
+        state.active = false;
+        state.alpha = 0;
+        rollRequired();
+        return;
+      }
+    }
+  });
+
+  function drawCard(ctx, r, card, hover) {
+    ctx.save();
+    ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+    var lift = hover ? 1.03 : 1;
+    ctx.scale(lift, lift);
+    ctx.globalAlpha = state.alpha;
+    var base = card.type === "green" ? "#1d4a2e" : "#5c2320";
+    var line = card.type === "green" ? "#29924f" : "#a6302c";
+    ctx.shadowColor = "rgba(0,0,0,0.4)";
+    ctx.shadowBlur = hover ? 18 : 10;
+    ctx.fillStyle = base;
+    roundRect(ctx, -r.w / 2, -r.h / 2, r.w, r.h, 12);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = hover ? line : "#465060";
+    ctx.lineWidth = 2;
+    roundRect(ctx, -r.w / 2, -r.h / 2, r.w, r.h, 12);
+    ctx.stroke();
+    ctx.fillStyle = line;
+    roundRect(ctx, -r.w / 2 + 8, -r.h / 2 + 8, r.w - 16, 6, 3);
+    ctx.fill();
+    ctx.fillStyle = line;
+    ctx.font = "bold 12px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(card.type === "green" ? "БАФФ" : "ДЕБАФФ", 0, -r.h / 2 + 38);
+    ctx.fillStyle = "#e6edf3";
+    ctx.font = "bold 16px system-ui";
+    ctx.fillText(card.title, 0, -r.h / 2 + 72);
+    ctx.font = "11px system-ui";
+    ctx.fillStyle = "#93a1b1";
+    ctx.fillText("заглушка", 0, -r.h / 2 + 92);
+    ctx.restore();
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+
+    if (state.active) state.alpha = Math.min(1, state.alpha + 0.06);
+
+    // прогресс-бар бросков
+    var bw = Math.min(view.w * 0.7, 420);
+    var bx = view.w / 2 - bw / 2;
+    var by = 40;
+    var pct = state.active ? 1 : Math.min(1, state.total / state.required);
+    ctx.fillStyle = "#1b2632";
+    ctx.fillRect(bx, by, bw, 14);
+    ctx.fillStyle = state.active ? "#e3b341" : "#29924f";
+    ctx.fillRect(bx, by, bw * pct, 14);
+    ctx.strokeStyle = "#465060";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, bw, 14);
+    ctx.fillStyle = "#93a1b1";
+    ctx.font = "12px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(state.active ? "ВЫБЕРИ КАРТОЧКУ" : ("бросков: " + state.total + " / " + state.required), view.w / 2, by + 38);
+
+    if (state.cards.length) {
+      for (var i = 0; i < state.cards.length; i++) {
+        drawCard(ctx, cardRect(i), state.cards[i], i === state.hover);
+      }
+    }
+    ctx.textAlign = "left";
+
+    if (state.chosen) {
+      ctx.fillStyle = state.chosen.type === "green" ? "#7ee787" : "#ff7b72";
+      ctx.font = "bold 14px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Выбрано: " + state.chosen.title + " (" + (state.chosen.type === "green" ? "бафф" : "дебафф") + ") — карточки ушли, игра продолжается", view.w / 2, view.h - 20);
+      ctx.textAlign = "left";
+    }
+
+    if (readout) readout.textContent = "порог: " + state.required + " (новый каждый раз)";
+  }
+
+  rollRequired();
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

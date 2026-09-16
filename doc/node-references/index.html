@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ссылки на узлы — как обращаться к нодам — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  #ref-tree .tree button {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    color: inherit; font: inherit; text-align: left;
+  }
+  #ref-tree .tree button.active { color: #6cc4f2; }
+  #ref-tree .tree .node-type { color: var(--muted); }
+  #ref-tree .tree .node-type::before { content: " : "; }
+  #ref-tree .tree .autoload { color: var(--orange); }
+  #ref-tree .tree .group-badge {
+    display: inline-block; font-size: 11px; color: var(--green);
+    border: 1px solid rgba(126,231,135,0.35); border-radius: 10px; padding: 0 6px; margin-left: 6px;
+  }
+  .ref-out {
+    background: #0d1117; border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: #cfe0ee;
+  }
+  .ref-out .cm { color: var(--muted); }
+  .ref-out .ok { color: var(--green); }
+  .ref-out .bad { color: var(--orange); }
+  .grid2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px; margin-top: 12px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  .mini-table td:first-child { white-space: nowrap; }
+</style>
+</head>
+<body data-chapter="node-references">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>справочник: ссылки на узлы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#idea">Модель: путь, а не ссылка</a>
+      <a href="#map">Unity → Godot</a>
+      <a href="#direct">Прямые пути</a>
+      <a href="#neighbors">Соседи и родитель</a>
+      <a href="#groups">Группы = теги</a>
+      <a href="#search">Поиск по имени и типу</a>
+      <a href="#classname">class_name</a>
+      <a href="#unique">Уникальные имена %</a>
+      <a href="#autoload">Autoload: всегда активные сцены</a>
+      <a href="#demo">Интерактив: как сослаться</a>
+      <a href="#quiz">Проверь себя</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">СПРАВОЧНИК</div>
+    <h1>Ссылки на узлы: как обращаться к нодам</h1>
+    <p class="lead">
+      В Unity ты привык к <code>Find</code>, <code>FindWithTag</code>, <code>FindObjectOfType</code>.
+      В Godot это называется по-другому, но главное отличие в голове: у узла нет «ручки» —
+      у тебя есть <b>путь по дереву сцены</b> и способы искать по дереву. Разберём все
+      способы на реальном коде этого проекта.
+    </p>
+
+    <h2 id="idea">Модель: путь, а не ссылка</h2>
+    <p>
+      Сцена — это дерево узлов. Чтобы «сослаться» на узел, ты либо знаешь его место в дереве
+      (путь), либо ищешь его по каким-то признакам (имя, группа, тип). Первое — как
+      <code>transform.Find()</code>, второе — как теги и <code>FindObjectOfType</code>.
+    </p>
+    <div class="callout unity">
+      <div class="callout-title">Главный инстинкт из Unity</div>
+      <p>
+        В Unity ты часто держишь ссылку в поле (<code>public GameObject foo;</code>).
+        В Godot поле хранит <b>путь к узлу</b> или <b>сам узел</b> — но путь объявляется
+        один раз в <code>@onready</code>, а дальше у тебя в руках узел, как привычная ссылка.
+        Пути вычисляются при старте, а не каждый кадр.
+      </p>
+    </div>
+
+    <h2 id="map">Unity → Godot</h2>
+    <table class="mini-table">
+      <thead><tr><th>В Unity</th><th>В Godot</th><th>Реальный пример в проекте</th></tr></thead>
+      <tbody>
+        <tr><td><code>transform.Find("Child")</code></td><td><code>$Child</code>, <code>get_node("Child")</code>, <code>@onready</code></td><td><code>debug_menu.gd</code>: <code>$Panel/Margin/VBox/SpawnRow/SpawnCountSlider</code></td></tr>
+        <tr><td><code>GameObject.Find("Name")</code></td><td><code>current_scene.find_child("Name", true, false)</code></td><td><code>debug_menu.gd</code>: поиск «Paper Creator»</td></tr>
+        <tr><td><code>FindWithTag("tag")</code></td><td><code>get_tree().get_nodes_in_group("tag")</code></td><td><code>buff_card_manager.gd</code>: группа <code>paper_storage</code></td></tr>
+        <tr><td><code>FindGameObjectWithTag</code></td><td><code>get_first_node_in_group("tag")</code></td><td><code>paper_storage.gd</code>: группа <code>player</code></td></tr>
+        <tr><td><code>GetComponent&lt;T&gt;()</code></td><td>тип узла + <code>as T</code> / <code>class_name</code></td><td><code>as BuffCard</code>, <code>as Node3D</code></td></tr>
+        <tr><td><code>FindObjectOfType&lt;T&gt;()</code></td><td><code>find_child("*", ...)</code> + проверка типа</td><td>— (см. раздел «Поиск»)</td></tr>
+        <tr><td>static-класс / singleton</td><td><b>Autoload</b> в project.godot</td><td>— (в проекте нет, разбираем ниже)</td></tr>
+        <tr><td><code>DontDestroyOnLoad</code></td><td>Autoload-сцена живёт между сценами</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="direct">Прямые пути</h2>
+    <p>
+      Если узел — твой потомок или известен путь от тебя, используй <code>$Путь</code>
+      (сокращение <code>get_node("Путь")</code>). Поле объявляется через <code>@onready</code>:
+      оно заполнится, когда узел войдёт в сцену и все дети будут готовы.
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/debug_menu.gd — путь по дереву</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@onready var panel : PanelContainer = $Panel
+@onready var spawn_count_slider : HSlider = $Panel/Margin/VBox/SpawnRow/SpawnCountSlider
+@onready var spawn_count_value : Label = $Panel/Margin/VBox/SpawnRow/SpawnCountValue</code></pre>
+    </div>
+    <p>
+      Это как <code>transform.Find("Panel/Margin/VBox/SpawnRow/SpawnCountSlider")</code>,
+      только путь отсчитывается от самого узла и указывается один раз в <code>@onready</code>.
+      Внутри скрипта дальше работаешь с <code>spawn_count_slider</code> как с обычной ссылкой.
+    </p>
+
+    <h2 id="neighbors">Соседи и родитель</h2>
+    <p>
+      Для соседей и родителей есть <code>..</code> (родитель) и <code>get_parent()</code>.
+      Так подсказка в UI находит игрока-соседа:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/interaction_prompt.gd — соседний узел</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@onready var interactor : Node = get_node("../Interactor")</code></pre>
+    </div>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/player_movement.gd — родитель</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@onready var player : CharacterBody3D = get_parent()</code></pre>
+    </div>
+    <p>
+      <code>..</code> в пути — это родитель, как в файловой системе. Но не злоупотребляй:
+      путь к «чужому» узлу ломается, если перенести узел. Для этого есть группы и autoload.
+    </p>
+
+    <h2 id="groups">Группы = теги</h2>
+    <p>
+      Аналог тегов из Unity. Узел сам себя помечает в <code>_ready()</code>, а найти его
+      можно в любом месте сцены. Именно так менеджер карточек находит все ящики, не зная их путей:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper Storage/paper_storage.gd — помечаем себя</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _ready() -> void:
+	add_to_group("paper_storage")   # как AddTag("paper_storage")</code></pre>
+    </div>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/buff_card_manager.gd — находим всех</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	overlay.visible = false
+	for storage in get_tree().get_nodes_in_group("paper_storage"):
+		storage.paper_deposited.connect(_on_paper_deposited)</code></pre>
+    </div>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">paper_storage.gd — первый из группы (как FindWithTag)</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">var player := get_tree().get_first_node_in_group("player") as Node3D</code></pre>
+    </div>
+    <p>
+      Проверка «в какой я группе» — <code>is_in_group("paper")</code>, как в
+      <code>paper_storage.gd</code> и <code>player_interactor.gd</code>. Группу можно
+      назначить и в редакторе (поле «Groups» у узла), не только кодом.
+    </p>
+
+    <h2 id="search">Поиск по имени и типу</h2>
+    <p>
+      Когда не знаешь пути и нет группы — ищем по имени по всему дереву текущей сцены.
+      Так делает дебаг-меню, когда ищет стол-раздатчик:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/debug_menu.gd — поиск по имени</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _on_spawn_pressed() -> void:
+	var creator := get_tree().current_scene.find_child("Paper Creator", true, false)
+	if creator == null:
+		return
+	var amount := int(spawn_count_slider.value)
+	for i in amount:
+		creator.spawn_paper()</code></pre>
+    </div>
+    <p>
+      Три аргумента <code>find_child(имя, recursive, owned)</code>:
+      <code>recursive = true</code> — искать по всему дереву (как <code>GameObject.Find</code>),
+      <code>owned = false</code> — не заглядывать в под-сцены чужих экземпляров.
+    </p>
+    <div class="callout tip">
+      <div class="callout-title">Аналог FindObjectOfType</div>
+      <p>
+        Если нужно «найти любой узел такого типа» — комбинируй:
+        <code>current_scene.find_children("*", "Paper", true, false)</code> вернёт список,
+        а <code>as Paper</code> или <code>is Paper</code> проверит тип. Но в Godot чаще
+        используется группа, а не тип — так быстрее и надёжнее.
+      </p>
+    </div>
+    <p>
+      Важно: <code>get_tree().current_scene</code> — это корень текущей сцены (как корень
+      сцены в Unity). Например, дебаг-меню лезет к игроку именно через него:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">debug_menu.gd — absolute путь от корня сцены</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@onready var interactor : Node = get_tree().current_scene.get_node("Player/Interactor")
+# ...
+var buff_ui := get_tree().current_scene.get_node("BuffCardUI") as Node
+if buff_ui != null and buff_ui.has_method("force_show"):
+	buff_ui.force_show()</code></pre>
+    </div>
+
+    <h2 id="classname">class_name: свой тип</h2>
+    <p>
+      <code>class_name</code> даёт узлу имя типа — как класс в C#. После этого ты можешь
+      типизировать переменные и делать <code>as</code> без сомнений:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/UI/buff_card.gd — объявление типа</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">class_name BuffCard
+extends Button</code></pre>
+    </div>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">buff_card_manager.gd — создание и типизация</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">var card := card_scene.instantiate() as BuffCard
+cards_container.add_child(card)
+card.setup(_random_buff(...))
+card.pressed.connect(_on_card_pressed.bind(card))</code></pre>
+    </div>
+    <p>
+      <code>class_name BuffCard</code> — это одновременно и «мой тип», и имя, по которому
+      Godot найдет скрипт. Как <code>public class BuffCard : Button</code> в Unity.
+    </p>
+
+    <h2 id="unique">Уникальные имена %</h2>
+    <p>
+      Промежуточный вариант между путём и глобальным именем: пометь узел в инспекторе
+      (правый клик → <b>Access as Unique Name</b>), и обращайся к нему из любого места сцены
+      через <code>%Имя</code>:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Пример</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">@onready var crosshair : ColorRect = %Crosshair   # не зависит от пути в дереве</code></pre>
+    </div>
+    <p>
+      Путь неважен, главное — чтобы имя было уникальным в сцене. Это как «глобальная
+      переменная на сцену».
+    </p>
+
+    <h2 id="autoload">Autoload: всегда активные сцены</h2>
+    <p>
+      Вопрос, который ты задал: «а если я сделаю так, чтобы UI-сцена была всегда активна
+      через настройки проекта?» Отвечаю — это <b>Autoload</b>, синглтон на движке.
+      Добавляется в <code>project.godot</code> (или в редакторе: Project → Project Settings →
+      вкладка <b>Autoload</b>):
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">project.godot — секция autoload</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">[autoload]
+
+HUD="*res://Prefabs/HUD.tscn"
+GameState="*res://Scripts/Autoload/game_state.gd"</code></pre>
+    </div>
+    <p>
+      Звёздочка <code>*</code> — «включить» (можно отключить, убрав её). Что происходит:
+      сцена/скрипт загружается <b>до</b> стартовой сцены, вешается на корень дерева
+      (<code>/root/HUD</code>) и живёт, пока игра не закроется — даже когда текущая сцена
+      меняется (как <code>DontDestroyOnLoad</code>).
+    </p>
+    <p>
+      Главное: из любой сцены, включая стартовую, ты обращаешься к нему <b>по имени прямо</b> —
+      как к глобальной переменной. Никаких <code>Find</code>:
+    </p>
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Из любой сцены, включая World.tscn</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _ready() -> void:
+	# autoload-сцена: имя — это и есть ссылка на корневой узел
+	HUD.show_message("Привет")
+	HUD.get_node("ScoreLabel").text = "0"
+
+	# autoload-скрипт: просто вызываешь методы
+	GameState.add_score(10)
+	print(GameState.score)</code></pre>
+    </div>
+    <p>
+      Под капотом <code>HUD</code> — обычный узел на <code>/root</code>, поэтому работают и
+      пути: <code>get_node("/root/HUD/ScoreLabel")</code>. Но имя в <code>[autoload]</code> —
+      это и есть зарегистрированная глобальная ссылка, ей и пользуйся.
+    </p>
+    <div class="callout tip">
+      <div class="callout-title">Правило выбора</div>
+      <p>
+        Свои дети и соседи — прямые пути <code>$</code>. «Чужие» объекты, которых может быть
+        несколько (ящики, бумажки) — группы. Один глобальный сервис, который нужен везде и
+        всегда (HUD, состояние игры, сохранения) — <b>autoload</b>. Поиск по имени
+        <code>find_child</code> — последнее средство, оно медленнее и ломается при переименовании.
+      </p>
+    </div>
+
+    <h2 id="demo">Интерактив: как сослаться на узел</h2>
+    <p>
+      Выбери, «откуда» ты обращаешься (выпадающий список), и кликни по узлу-цели слева.
+      Справа покажется код ссылки — как это сделать в реальной сцене.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>get_node, $, группы, autoload</span></div>
+      <div class="demo-body">
+        <label style="font-size:13px;">Откуда обращаемся:
+          <select id="ref-from" style="margin-left:8px;"></select>
+        </label>
+        <div class="grid2">
+          <div id="ref-tree" class="tree" style="margin:0;"></div>
+          <div class="ref-out" id="ref-out" style="margin:0;">Кликни по узлу слева.</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Чем <code>$Panel/Margin/VBox</code> похоже на Unity?</p>
+      <button class="opt" data-explain="Префиксы $ нет, а Find ищет от корня сцены.">На GameObject.Find("...")</button>
+      <button class="opt" data-correct="true" data-explain="$Путь — это как transform.Find(&quot;...&quot;), только путь считается от самого узла и пишется один раз в @onready.">На transform.Find("Panel/Margin/VBox")</button>
+      <button class="opt" data-explain="Группы — это аналог тегов, а не путей.">На FindWithTag</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Как в Godot «пометить» узел, чтобы потом искать его из любой точки сцены?</p>
+      <button class="opt" data-explain="Это ставит имя, но путь всё равно нужен.">Добавить в class_name</button>
+      <button class="opt" data-correct="true" data-explain="Группа — это тег: add_to_group(&quot;имя&quot;) в коде или поле Groups в редакторе, искать — get_nodes_in_group(&quot;имя&quot;).">add_to_group("имя") + get_nodes_in_group("имя")</button>
+      <button class="opt" data-explain="В GetComponent ссылку передаёт редактор, а не тег.">GetComponent&lt;T&gt;()</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Что такое Autoload и как к нему обращаться?</p>
+      <button class="opt" data-explain="Autoload не меняет текущую сцену, он вешается на /root.">Это имя текущей сцены</button>
+      <button class="opt" data-correct="true" data-explain="Autoload — синглтон в project.godot, загружается до стартовой сцены и живёт между сценами. Обращение — по имени: HUD.show_message(...).">Синглтон из project.godot, обращение по имени из любой сцены</button>
+      <button class="opt" data-explain="Как раз наоборот: он живёт при смене сцен.">Уничтожается при смене сцены</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-nav">
+      <a class="prev" href="../buff-cards/index.html"><span class="dir">← Назад</span>Фича: буфф-карточки</a>
+      <a class="next" href="../index.html"><span class="dir">К карте обучения →</span>Учебник Nerdy Papers</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script>
+(function () {
+  var fromSel = document.getElementById("ref-from");
+  var treeBox = document.getElementById("ref-tree");
+  var out = document.getElementById("ref-out");
+  if (!fromSel || !treeBox || !out) return;
+
+  function N(name, type, meta) {
+    return { name: name, type: type, meta: meta || {}, children: [], parent: null };
+  }
+
+  var root = N("root", "Window", {});
+  var world = N("World", "Node3D", { root: true });
+  var player = N("Player", "CharacterBody3D", { groups: ["player"], scene: "Player.tscn" });
+  var camera = N("Camera3D", "Camera3D", {});
+  var hold = N("HoldPoint", "Node3D", {});
+  var movement = N("Node", "Node", { script: "player_movement.gd" });
+  var interactor = N("Interactor", "Node", { script: "player_interactor.gd" });
+  var ui = N("UI", "CanvasLayer", { script: "interaction_prompt.gd" });
+  var crosshair = N("Crosshair", "ColorRect", {});
+  var promptLabel = N("Label", "Label", {});
+  var storage1 = N("Paper Storage", "Node3D", { groups: ["paper_storage"], scene: "paper_storage.tscn" });
+  var debug = N("DebugMenu", "CanvasLayer", { scene: "DebugMenu.tscn" });
+  var buffCardUI = N("BuffCardUI", "CanvasLayer", { script: "buff_card_manager.gd", scene: "BuffCardUI.tscn" });
+  var overlay = N("Overlay", "Control", {});
+  var dimmer = N("Dimmer", "ColorRect", {});
+  var center = N("Center", "CenterContainer", {});
+  var cards = N("Cards", "HBoxContainer", {});
+  var hud = N("HUD", "CanvasLayer", { autoload: "res://Prefabs/HUD.tscn", scene: "HUD.tscn" });
+  var gameState = N("GameState", "Node", { autoload: "res://Scripts/Autoload/game_state.gd", script: "game_state.gd" });
+
+  world.children = [player, storage1, debug, buffCardUI];
+  player.children = [camera, movement, interactor, ui];
+  camera.children = [hold];
+  ui.children = [crosshair, promptLabel];
+  buffCardUI.children = [overlay];
+  overlay.children = [dimmer, center];
+  center.children = [cards];
+  root.children = [world, hud, gameState];   // autoload живут на /root, как и текущая сцена
+
+  var all = [root, world, player, camera, hold, movement, interactor, ui, crosshair, promptLabel,
+    storage1, debug, buffCardUI, overlay, dimmer, center, cards, hud, gameState];
+  all.forEach(function (n) {
+    n.children.forEach(function (c) { c.parent = n; });
+  });
+
+  var ids = {};
+  all.forEach(function (n) { ids[n.name] = n; });
+
+  all.forEach(function (n) {
+    if (n !== root) fromSel.appendChild(new Option(n.name, n.name));
+  });
+  fromSel.value = "BuffCardUI";
+
+  function renderNode(n) {
+    var li = document.createElement("li");
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.name = n.name;
+    var typeTxt = n.meta.script ? n.meta.script.replace(".gd", "") : n.type;
+    btn.innerHTML = '<span class="node-name">' + n.name + '</span>' +
+      '<span class="node-type">' + typeTxt + '</span>' +
+      (n.meta.groups ? n.meta.groups.map(function (g) { return '<span class="group-badge">' + g + '</span>'; }).join("") : "") +
+      (n.meta.autoload ? ' <span class="autoload">autoload</span>' : "");
+    li.appendChild(btn);
+    if (n.children.length) {
+      var ul = document.createElement("ul");
+      n.children.forEach(function (c) { ul.appendChild(renderNode(c)); });
+      li.appendChild(ul);
+    }
+    return li;
+  }
+
+  var rootList = document.createElement("ul");
+  rootList.appendChild(renderNode(root));
+  treeBox.appendChild(rootList);
+
+  treeBox.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-name]");
+    if (!btn) return;
+    treeBox.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    showRef(ids[btn.dataset.name]);
+  });
+
+  function relPath(from, to) {
+    if (from === to) return [];
+    var fc = [], tc = [], f = from, t = to;
+    while (f) { fc.push(f); f = f.parent; }
+    while (t) { tc.push(t); t = t.parent; }
+    // fc[i] и tc[j] идут от самого узла к корню; последний элемент — корень
+    var i = fc.length - 1, j = tc.length - 1;
+    while (i >= 0 && j >= 0 && fc[i] === tc[j]) { i--; j--; }
+    // общий предок — fc[i+1]; шагов вверх от from до него ровно i+1
+    var ups = i + 1;
+    var parts = [];
+    for (var u = 0; u < ups; u++) parts.push("..");
+    for (var k = j; k >= 0; k--) parts.push(tc[k].name);
+    return parts;
+  }
+
+  function absPath(n) {
+    var parts = [], cur = n;
+    while (cur) { parts.unshift(cur.name); cur = cur.parent; }
+    return "/" + parts.join("/");
+  }
+
+  function showRef(target) {
+    var from = ids[fromSel.value];
+    if (!from) return;
+    var lines = [];
+    lines.push("# откуда: " + from.name + "   →   цель: " + target.name);
+
+    if (from === target) {
+      lines.push('$"self" — ты и есть цель');
+      lines.push("self");
+    } else {
+      var rel = relPath(from, target);
+      var path = rel.join("/");
+      if (rel.length && rel[0] !== "..") {
+        lines.push("$" + path + "        # прямой потомок");
+      } else if (rel.length && rel[0] === "..") {
+        lines.push('get_node("' + path + '")   # сосед/предок');
+      }
+      lines.push('get_node("' + absPath(target) + '")   # абсолютный путь');
+    }
+
+    if (target.meta.groups && target.meta.groups.length) {
+      lines.push("");
+      target.meta.groups.forEach(function (g) {
+        lines.push('get_tree().get_first_node_in_group("' + g + '")   # как FindWithTag("' + g + '")');
+      });
+    }
+    if (target.meta.autoload) {
+      lines.push("");
+      lines.push(target.name + '                # autoload: глобальное имя, из любой сцены');
+      lines.push('get_node("/root/' + target.name + '")   # оно же по пути');
+    }
+    if (target.meta.root) {
+      lines.push("");
+      lines.push('get_tree().current_scene    # корень текущей сцены');
+    }
+
+    lines.push("");
+    if (from === target) {
+      lines.push('@onready var ref : Node = self');
+    } else {
+      var rel2 = relPath(from, target);
+      var path2 = rel2.join("/");
+      var expr = rel2.length && rel2[0] !== ".." ? "$" + path2 : 'get_node("' + path2 + '")';
+      lines.push('@onready var ref : Node = ' + expr + '   # кэшируем один раз в _ready');
+    }
+    out.textContent = lines.join("\n");
+  }
+
+  fromSel.addEventListener("change", function () {
+    var active = treeBox.querySelector("button.active");
+    if (active) showRef(ids[active.dataset.name]);
+  });
+
+  showRef(buffCardUI);
+})();
+</script>
+</body>
+</html>
