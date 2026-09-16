@@ -53,3 +53,6 @@ text = "1"
 
 [node name="DeleteButton" type="Button" parent="Panel/Margin/VBox"]
 text = "Удалить все бумажки"
+
+[node name="ForceCardsButton" type="Button" parent="Panel/Margin/VBox"]
+text = "Показать карточки"

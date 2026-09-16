@@ -1,5 +1,7 @@
 extends Node3D
 
+signal paper_deposited(count: int)
+
 @onready var detect_area : Area3D = $DetectArea
 @onready var count_label : Label3D = $CountLabel
 @onready var type_label : Label3D = $TypeLabel
@@ -16,6 +18,7 @@ const LABEL_FADE_TIME : float = 0.3
 var count : int = 0
 
 func _ready() -> void:
+	add_to_group("paper_storage")
 	detect_area.body_entered.connect(_on_body_entered)
 	type_label.text = str(paper_type)
 	_update_label()
@@ -29,6 +32,7 @@ func _on_body_entered(body: Node3D) -> void:
 		body.queue_free()
 		_update_label()
 		_spawn_plus_one_label()
+		paper_deposited.emit(count)
 	else:
 		_throw_toward_player(body)
 

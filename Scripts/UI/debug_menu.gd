@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var max_held_slider : HSlider = $Panel/Margin/VBox/MaxHeldRow/MaxHeldSlider
 @onready var max_held_value : Label = $Panel/Margin/VBox/MaxHeldRow/MaxHeldValue
 @onready var delete_button : Button = $Panel/Margin/VBox/DeleteButton
+@onready var force_cards_button : Button = $Panel/Margin/VBox/ForceCardsButton
 
 @onready var interactor : Node = get_tree().current_scene.get_node("Player/Interactor")
 
@@ -16,6 +17,7 @@ func _ready() -> void:
 	max_held_slider.value_changed.connect(_on_max_held_changed)
 	spawn_button.pressed.connect(_on_spawn_pressed)
 	delete_button.pressed.connect(_on_delete_pressed)
+	force_cards_button.pressed.connect(_on_force_cards_pressed)
 	_on_spawn_count_changed(spawn_count_slider.value)
 	_on_max_held_changed(max_held_slider.value)
 
@@ -54,3 +56,8 @@ func _on_delete_pressed() -> void:
 	for paper in get_tree().get_nodes_in_group("paper"):
 		if is_instance_valid(paper):
 			paper.queue_free()
+
+func _on_force_cards_pressed() -> void:
+	var buff_ui := get_tree().current_scene.get_node("BuffCardUI") as Node
+	if buff_ui != null and buff_ui.has_method("force_show"):
+		buff_ui.force_show()

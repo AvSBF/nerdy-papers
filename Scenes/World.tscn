@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cxasut8klwf3u" path="res://Prefabs/paper_creating_table.tscn" id="3_5nsto"]
 [ext_resource type="PackedScene" uid="uid://bq7w2m5n8k3xa" path="res://Prefabs/paper_storage.tscn" id="4_storage"]
 [ext_resource type="PackedScene" uid="uid://bcdkmwvhqb7qf" path="res://Prefabs/DebugMenu.tscn" id="5_debug"]
+[ext_resource type="PackedScene" uid="uid://b1c4rdu1c4rda" path="res://Prefabs/BuffCardUI.tscn" id="6_buffcard"]
 
 [sub_resource type="Environment" id="Environment_mmoe8"]
 background_mode = 1
@@ -58,3 +59,5 @@ transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, 3.
 paper_type = 4
 
 [node name="DebugMenu" parent="." unique_id=669537794 instance=ExtResource("5_debug")]
+
+[node name="BuffCardUI" parent="." unique_id=733271258 instance=ExtResource("6_buffcard")]
