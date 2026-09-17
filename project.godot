@@ -23,6 +23,7 @@ window/stretch/aspect="expand"
 [global_group]
 
 paper_storage=""
+round_controller=""
 
 [input]
 

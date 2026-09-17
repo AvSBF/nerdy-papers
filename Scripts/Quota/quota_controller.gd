@@ -2,18 +2,16 @@ extends CanvasLayer
 
 @onready var quota_label : Label = $"Quota Detials"
 
-var current_quota : int
-var current_deposited : int
+var _round : Node
 
 func _ready():
-	current_quota = 100
-	current_deposited = 0
-	for storage in get_tree().get_nodes_in_group("paper_storage"):
-		storage.paper_deposited.connect(_on_paper_deposited)
+	_round = get_tree().get_first_node_in_group("round_controller")
+	if _round != null:
+		_round.deposits_changed.connect(_on_deposits_changed)
+		_update_label()
 
-func _on_paper_deposited(_count: int) -> void:
-	current_deposited += 1
+func _on_deposits_changed(_current_deposited: int, _required_for_buff: int) -> void:
 	_update_label()
 
 func _update_label():
-	quota_label.text = "%d / %d" % [current_deposited, current_quota]
+	quota_label.text = "%d / %d" % [_round.current_deposited, _round.current_quota]
