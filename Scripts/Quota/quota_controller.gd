@@ -15,6 +15,5 @@ func _on_paper_deposited(_count: int) -> void:
 	current_deposited += 1
 	_update_label()
 
-
 func _update_label():
 	quota_label.text = "%d / %d" % [current_deposited, current_quota]
