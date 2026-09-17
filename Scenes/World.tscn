@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://b1c4rdu1c4rda" path="res://Prefabs/BuffCardUI.tscn" id="6_buffcard"]
 [ext_resource type="PackedScene" uid="uid://crud2rvtp0ttd" path="res://Scenes/QuotaUI.tscn" id="7_y7y61"]
 [ext_resource type="Script" uid="uid://b2l86utljavna" path="res://Scripts/Round/round_controller.gd" id="8_q2d71"]
+[ext_resource type="PackedScene" uid="uid://cuxo5cfijmurj" path="res://Scenes/BuffUI.tscn" id="8_uo7di"]
 
 [sub_resource type="Environment" id="Environment_mmoe8"]
 background_mode = 1
@@ -66,6 +67,8 @@ paper_type = 4
 
 [node name="QuotaUI" parent="." unique_id=1553816689 instance=ExtResource("7_y7y61")]
 
+[node name="BuffUi" parent="." unique_id=85365021 instance=ExtResource("8_uo7di")]
+
 [node name="Round Controller" type="Node" parent="." unique_id=944369856 groups=["round_controller"]]
 script = ExtResource("8_q2d71")
-quota_increase_multiplier_range = Vector2(1.1, 2)
+quota_growth_range = Vector2(1.5, 2.5)
