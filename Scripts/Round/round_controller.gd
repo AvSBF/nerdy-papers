@@ -9,8 +9,11 @@ signal quota_reached
 
 var total_deposited : int = 0
 var buff_threshold : int = 0
-
 var quota_target : int = 3
+
+# баффы
+# очки за бумажку
+var points_per_paper : int = 1
 
 func _ready() -> void:
 	for storage in get_tree().get_nodes_in_group("paper_storage"):
@@ -25,7 +28,7 @@ func reset_round() -> void:
 	roll_required()
 
 func _on_paper_deposited(_count: int) -> void:
-	total_deposited += 1
+	total_deposited += points_per_paper
 	deposits_changed.emit(total_deposited, buff_threshold)
 	if total_deposited >= buff_threshold:
 		buff_required_reached.emit()
@@ -50,3 +53,9 @@ func complete_quota() -> void:
 
 func next_quota_stage() -> void:
 	quota_change_required()
+
+func apply_buff(buff_id : String):
+	match buff_id:
+		"extra_points":
+			points_per_paper += 1
+	return

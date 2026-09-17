@@ -5,14 +5,14 @@ signal card_chosen(card_type: String)
 @export var card_scene : PackedScene
 
 const GOOD_POOL : Array[Dictionary] = [
-	{"title": "Лёгкие ноги", "desc": "Заглушка. Скорость пока не меняется."},
-	{"title": "Сильный бросок", "desc": "Заглушка. Дальность броска пока не меняется."},
-	{"title": "Второе дыхание", "desc": "Заглушка. Ничего пока не даёт."},
+	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
+	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
+	{"title": "Extra points", "desc": "Each paper gives +1 extra point", "buff_id" : "extra_points"},
 ]
 
 const BAD_POOL : Array[Dictionary] = [
-	{"title": "Тяжёлые руки", "desc": "Заглушка. Скорость пока не меняется."},
-	{"title": "Дрожь в руках", "desc": "Заглушка. Точность пока не меняется."},
+	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
+	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
 	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
 ]
 
@@ -72,6 +72,8 @@ func _random_buff(type: String, used: Array[int]) -> Dictionary:
 func _on_card_pressed(card: BuffCard) -> void:
 	card_chosen.emit(card.card_type)
 	if _round != null:
+		if !card.buff_id.is_empty():
+			_round.apply_buff(card.buff_id)
 		_round.roll_required()
 	_hide_cards()
 

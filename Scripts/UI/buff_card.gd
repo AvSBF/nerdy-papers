@@ -12,12 +12,14 @@ const RED_COLOR := Color(0.65, 0.2, 0.18)
 @onready var desc_label : Label = $Margin/VBox/DescLabel
 
 var card_type : String = "green"
+var buff_id : String
 
 func _ready() -> void:
 	pressed.connect(_on_pressed)
 
 func setup(data: Dictionary) -> void:
 	card_type = str(data.get("type", "green"))
+	buff_id = data.get("buff_id","")
 	var color := GREEN_COLOR if card_type == "green" else RED_COLOR
 	top_stripe.color = color
 	type_label.add_theme_color_override("font_color", color)
