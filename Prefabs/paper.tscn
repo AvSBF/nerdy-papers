@@ -2,12 +2,18 @@
 
 [ext_resource type="PhysicsMaterial" uid="uid://cadxghvtfycfm" path="res://Physics Material/paper_material.tres" id="1_0214c"]
 [ext_resource type="Script" uid="uid://cv5p3q8m11awd" path="res://Scripts/Paper/paper.gd" id="1_paper"]
+[ext_resource type="Shader" uid="uid://bq3v8u2m5n7h" path="res://Shaders/paper_outline.gdshader" id="2_outline_shader"]
+[ext_resource type="Script" uid="uid://c7m2uap4r1k8" path="res://Scripts/Paper/paper_outline.gd" id="3_outline_script"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_mmoe8"]
 size = Vector3(0.2, 0.03564453, 0.112219244)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_22reo"]
 size = Vector3(0.2, 0.034791015, 0.112)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline_shader")
 
 [node name="Paper" type="RigidBody3D" unique_id=400861797]
 collision_layer = 4
@@ -23,9 +29,15 @@ mesh = SubResource("BoxMesh_mmoe8")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.017000519, 0)
 shape = SubResource("BoxShape3D_22reo")
 
-[node name="TypeLabel" type="Label3D" parent="."]
+[node name="TypeLabel" type="Label3D" parent="." unique_id=815447775]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 0)
 billboard = 1
 text = "1"
-font_size = 32
 outline_size = 8
+
+[node name="Outline" type="MeshInstance3D" parent="." unique_id=1225347305]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.017568357, 0)
+material_override = SubResource("ShaderMaterial_outline")
+mesh = SubResource("BoxMesh_mmoe8")
+script = ExtResource("3_outline_script")
+thickness = Vector3(0.12, 0.3, 0.12)

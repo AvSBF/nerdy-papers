@@ -41,6 +41,7 @@ compositor = SubResource("Compositor_5nsto")
 transform = Transform3D(0.9010685, 0, -0.4336768, 0.2033406, 0.88326406, 0.4224893, 0.38305113, -0.46887589, 0.79588145, 0, 7, 0)
 
 [node name="Player" parent="." unique_id=1680936360 instance=ExtResource("2_j0p05")]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53218794, 0.025000572, 2.0491886)
 
 [node name="Paper Creating Table" parent="." unique_id=1739078887 instance=ExtResource("3_5nsto")]

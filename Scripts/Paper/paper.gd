@@ -8,10 +8,14 @@ signal picked_up(paper: Paper)
 const KILL_Y : float = -0.5
 
 @onready var type_label : Label3D = $TypeLabel
+@onready var outline : PaperOutline = $Outline
 
 func _ready() -> void:
 	type_label.text = str(paper_type)
 	type_label.visible = false
+
+func set_highlighted(on: bool) -> void:
+	outline.set_highlighted(on)
 
 var _flight_target : Node3D = null
 var _hold_point : Node3D = null

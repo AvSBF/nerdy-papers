@@ -1,4 +1,5 @@
 extends Node
+class_name PlayerMovement
 
 @onready var player : CharacterBody3D = get_parent()
 @onready var controller : Node = player

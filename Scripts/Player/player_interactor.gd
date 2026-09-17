@@ -1,4 +1,5 @@
 extends Node
+class_name PlayerInteractor
 
 signal target_changed(target: Node)
 signal held_paper_changed(paper: Node)
@@ -31,8 +32,16 @@ func _update_target() -> void:
 	var target := _find_target()
 	if target == current_target:
 		return
+	_set_target_highlight(current_target, false)
 	current_target = target
+	_set_target_highlight(current_target, true)
 	target_changed.emit(current_target)
+
+func _set_target_highlight(node: Node, on: bool) -> void:
+	if node != null and node.is_in_group("paper"):
+		var paper := node as Paper
+		if paper:
+			paper.set_highlighted(on)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
@@ -70,6 +79,7 @@ func _on_paper_interacted(paper: Node) -> void:
 	if body == null or _flying_paper != null or _throwing or held_papers.size() >= max_held_papers:
 		return
 	_flying_paper = body
+	body.set_highlighted(false)
 	body.hold_offset = _stack_offset_for_index(held_papers.size())
 	body.set_show_label_while_held(held_papers.size() == 0)
 	body.picked_up.connect(_on_paper_picked_up, CONNECT_ONE_SHOT)

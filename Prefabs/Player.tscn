@@ -14,6 +14,11 @@ size = Vector3(0.3, 1.8, 0.3)
 [node name="Player" type="CharacterBody3D" unique_id=1680936360 groups=["player"]]
 collision_layer = 2
 script = ExtResource("1_um8lo")
+move_speed = null
+sprint_multiplier = null
+mouse_sensitivity = null
+min_pitch = null
+max_pitch = null
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1810509082]
 transform = Transform3D(0.3, 0, 0, 0, 1.8, 0, 0, 0, 0.3, 0, 0.90000004, 0)
@@ -30,7 +35,7 @@ script = ExtResource("2_rot")
 [node name="HoldPoint" type="Node3D" parent="Camera3D" unique_id=2017331594]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.9)
 
-[node name="Node" type="Node" parent="." unique_id=587681766]
+[node name="PlayerMovement" type="Node" parent="." unique_id=587681766]
 script = ExtResource("3_mvm")
 
 [node name="Interactor" type="Node" parent="." unique_id=1427895630]
