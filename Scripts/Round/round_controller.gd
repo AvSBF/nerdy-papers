@@ -1,4 +1,5 @@
 extends Node
+class_name RoundController
 
 signal deposits_changed(total_deposited: int, buff_threshold: int)
 signal buff_required_reached
@@ -14,6 +15,8 @@ var quota_target : int = 3
 # баффы
 # очки за бумажку
 var points_per_paper : int = 1
+# дополнительная скорость
+var current_additional_speed : float = 0
 
 func _ready() -> void:
 	for storage in get_tree().get_nodes_in_group("paper_storage"):
@@ -58,4 +61,8 @@ func apply_buff(buff_id : String):
 	match buff_id:
 		"extra_points":
 			points_per_paper += 1
+		"movement_speed_positive":
+			current_additional_speed += 0.25
+		"movement_speed_negative":
+			current_additional_speed -= 0.5
 	return

@@ -6,12 +6,12 @@ signal card_chosen(card_type: String)
 
 const GOOD_POOL : Array[Dictionary] = [
 	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
-	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
 	{"title": "Extra points", "desc": "Each paper gives +1 extra point", "buff_id" : "extra_points"},
+	{"title": "Speed Increase", "desc": "Adds 0.25 to movement speed", "buff_id" : "movement_speed_positive"},
 ]
 
 const BAD_POOL : Array[Dictionary] = [
-	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
+	{"title": "Speed Decrease", "desc": "Takes 0.5 from movement speed", "buff_id" : "movement_speed_negative"},
 	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
 	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
 ]
@@ -19,7 +19,7 @@ const BAD_POOL : Array[Dictionary] = [
 @onready var overlay : Control = $Overlay
 @onready var cards_container : HBoxContainer = $Overlay/Center/Panel/VBox/Cards
 
-var _round : Node
+var _round : RoundController
 var _cards_active : bool = false
 
 func _ready() -> void:

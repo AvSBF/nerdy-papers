@@ -5,9 +5,11 @@ class_name PlayerMovement
 @onready var controller : Node = player
 
 var camera : Camera3D
+var round_controller : RoundController
 
 func _ready() -> void:
 	camera = player.get_node("Camera3D")
+	round_controller = get_tree().get_first_node_in_group("round_controller")
 
 func _physics_process(_delta: float) -> void:
 	var input_dir := Vector2(
@@ -27,8 +29,7 @@ func _physics_process(_delta: float) -> void:
 	var move_dir := (right * direction.x + forward * direction.z)
 
 	var speed = controller.move_speed
-	if Input.is_action_pressed("sprint"):
-		speed *= controller.sprint_multiplier
-
+	speed = max(1, speed + round_controller.current_additional_speed)
+	
 	player.velocity = move_dir * speed
 	player.move_and_slide()

@@ -34,37 +34,38 @@
     </p>
 
     <div class="buff-tags">
-      <span class="tag id">buff_id: "light_legs"</span>
+      <span class="tag id">buff_id: "movement_speed_positive"</span>
       <span class="tag green">бафф · зелёная</span>
       <span class="tag duration">весь раунд · стакается</span>
+      <span class="status impl">реализовано</span>
     </div>
 
     <h2 id="effect">Эффект</h2>
     <div class="effect-card">
       <div class="icon">⚡</div>
       <div>
-        <h4>Скорость × (1 + 0.25 за выбор)</h4>
+        <h4>Дополнительная скорость +0.25 за выбор</h4>
         <p>
-          Множитель <code>speed_multiplier</code> живёт в <code>RoundController</code>
-          и прибавляется на 0.25 за каждый выбор. Скрипт движения умножает на него
-          базовую скорость игрока.
+          Аддитивная добавка <code>current_additional_speed</code> живёт в
+          <code>RoundController</code>. Скрипт движения прибавляет её к базовой
+          скорости: <code>move_speed + current_additional_speed</code>, но не ниже 1.
         </p>
       </div>
     </div>
 
     <div class="stat-chips">
-      <div class="chip">Без баффа<b>×1.00</b>move_speed</div>
-      <div class="chip green">1-й выбор<b>×1.25</b>move_speed × 1.25</div>
-      <div class="chip green">2-й выбор<b>×1.50</b>move_speed × 1.50</div>
+      <div class="chip">Без баффа<b>+0</b>move_speed</div>
+      <div class="chip green">1-й выбор<b>+0.25</b>move_speed + 0.25</div>
+      <div class="chip green">2-й выбор<b>+0.50</b>move_speed + 0.50</div>
     </div>
 
     <h2 id="scheme">Схема работы</h2>
     <div class="flow">
-      <div class="step"><b>1. Выбор</b>Карточка выбрана — <code>apply_buff("light_legs")</code>.</div>
+      <div class="step"><b>1. Выбор</b>Карточка выбрана — <code>apply_buff("movement_speed_positive")</code>.</div>
       <div class="arrow">→</div>
-      <div class="step"><b>2. Множитель</b><code>speed_multiplier += 0.25</code>.</div>
+      <div class="step"><b>2. Бонус</b><code>current_additional_speed += 0.25</code>.</div>
       <div class="arrow">→</div>
-      <div class="step"><b>3. Движение</b><code>player_movement</code> умножает <code>move_speed</code> на множитель.</div>
+      <div class="step"><b>3. Движение</b><code>speed = max(1, move_speed + current_additional_speed)</code>.</div>
       <div class="arrow">→</div>
       <div class="step active"><b>4. Бег</b>Игрок двигается быстрее. Выбор снова — ещё быстрее.</div>
     </div>
@@ -72,9 +73,9 @@
     <div class="callout unity">
       <div class="callout-title">Из Unity</div>
       <p>
-        Аналог модификатора стата: <code>speed_multiplier</code> — как <code>float</code>
-        на <code>GameManager</code>, который применяется к <code>moveSpeed</code>
-        персонажа каждый кадр.
+        Аналог модификатора стата: <code>current_additional_speed</code> — как
+        <code>float</code>-поле на <code>GameManager</code>, которое прибавляется
+        к <code>moveSpeed</code> персонажа каждый кадр.
       </p>
     </div>
 
@@ -82,55 +83,62 @@
     <ol class="plan">
       <li>
         <span class="file-tag">Scripts/Round/round_controller.gd</span>
-        <h4>Множитель скорости + apply_buff()</h4>
+        <h4>Дополнительная скорость + apply_buff()</h4>
         <p>
-          Здесь же живёт и красный «Тяжёлые ноги» — тот же множитель, только вниз,
-          с потолком, чтобы скорость не уходила в ноль.
+          Рядом живёт красный «Тяжёлые ноги» (<code>movement_speed_negative</code>) —
+          тот же стат, только вниз.
         </p>
         <div class="code">
           <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — скорость</span><button class="copy-btn" type="button">Копировать</button></div>
-          <pre><code data-lang="gdscript">const SPEED_STEP : float = 0.25
-var speed_multiplier : float = 1.0
+          <pre><code data-lang="gdscript">var current_additional_speed : float = 0
 
-func apply_buff(buff_id: String) -> void:
+func apply_buff(buff_id: String):
 	match buff_id:
-		"light_legs":
-			speed_multiplier += SPEED_STEP
-		"heavy_legs":
-			speed_multiplier = maxf(0.25, speed_multiplier - SPEED_STEP)</code></pre>
+		"extra_points":
+			points_per_paper += 1
+		"movement_speed_positive":
+			current_additional_speed += 0.25
+		"movement_speed_negative":
+			current_additional_speed -= 0.5
+	return</code></pre>
         </div>
       </li>
 
       <li>
         <span class="file-tag">Scripts/Player/player_movement.gd</span>
-        <h4>Применяем множитель</h4>
+        <h4>Применяем добавку</h4>
         <p>
-          Одна строка: берём ссылку на раунд в <code>_ready()</code> и умножаем
-          базовую скорость.
+          Скрипт движения берёт ссылку на раунд в <code>_ready()</code> и прибавляет
+          стат к базовой скорости. Пол ограничен: скорость никогда не упадёт ниже 1.
         </p>
         <div class="code">
           <div class="code-head"><span class="dot"></span><span class="code-file">player_movement.gd — применение</span><button class="copy-btn" type="button">Копировать</button></div>
-          <pre><code data-lang="gdscript">var _round : Node
+          <pre><code data-lang="gdscript">var round_controller : RoundController
 
 func _ready() -> void:
-	_round = get_tree().get_first_node_in_group("round_controller")
-	# ...
+	camera = player.get_node("Camera3D")
+	round_controller = get_tree().get_first_node_in_group("round_controller")
 
 func _physics_process(_delta: float) -> void:
 	# ...
-	var speed = controller.move_speed * _round.speed_multiplier
-	if Input.is_action_pressed("sprint"):
-		speed *= controller.sprint_multiplier</code></pre>
+	var speed = controller.move_speed
+	speed = max(1, speed + round_controller.current_additional_speed)
+	player.velocity = move_dir * speed
+	player.move_and_slide()</code></pre>
         </div>
       </li>
 
       <li>
         <span class="file-tag">Scripts/Round/round_controller.gd</span>
-        <h4>Сброс в новом раунде</h4>
+        <h4>Сброс в новом раунде (доделать)</h4>
+        <p>
+          Сейчас <code>reset_round()</code> ещё не трогает <code>current_additional_speed</code>.
+          По правилам баффов новый раунд должен обнулять стат.
+        </p>
         <div class="code">
           <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
           <pre><code data-lang="gdscript">func reset_round() -> void:
-	speed_multiplier = 1.0
+	current_additional_speed = 0
 	# ...</code></pre>
         </div>
       </li>
@@ -147,7 +155,7 @@ func _physics_process(_delta: float) -> void:
       <div class="demo-body">
         <canvas id="run-canvas" data-h="160"></canvas>
         <div class="demo-controls">
-          <button type="button" id="pick">Выбрать бафф (+25%)</button>
+          <button type="button" id="pick">Выбрать бафф (+0.25)</button>
           <button type="button" id="reset">Сброс</button>
           <span id="readout"></span>
         </div>
