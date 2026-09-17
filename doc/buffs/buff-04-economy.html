@@ -34,20 +34,22 @@
     </p>
 
     <div class="buff-tags">
-      <span class="tag id">buff_id: "economy"</span>
+      <span class="tag id">buff_id: "quota_change_positive"</span>
       <span class="tag green">бафф · зелёная</span>
       <span class="tag duration">весь раунд · стакается</span>
+      <span class="status impl">реализовано</span>
     </div>
 
     <h2 id="effect">Эффект</h2>
     <div class="effect-card">
       <div class="icon">➖</div>
       <div>
-        <h4>quota_target минус случайное число (30–70)</h4>
+        <h4>quota_target минус случайное число (30–70), но не ниже total + 1</h4>
         <p>
-          <code>apply_buff("economy")</code> вычитает из <code>quota_target</code>
-          случайное число от 30 до 70. Минимум — 1, чтобы квота не ушла в ноль.
-          Каждый новый выбор снова режет квоту.
+          <code>apply_buff("quota_change_positive")</code> вычитает из
+          <code>quota_target</code> случайное число от 30 до 70. Квота не может стать
+          уже выполненной: минимум — <code>total_deposited + 1</code>. То есть
+          <code>0/3 → 0/1</code>, а при <code>250/300</code> резе — <code>250/251</code>.
         </p>
       </div>
     </div>
@@ -55,13 +57,15 @@
     <div class="stat-chips">
       <div class="chip">До выбора<b>quota_target = 300</b>например</div>
       <div class="chip green">После выбора<b>300 − 30..70</b>остаётся 230–270</div>
+      <div class="chip green">Рез почти по цели<b>250/300 → 250/251</b>не выполнилась</div>
+      <div class="chip green">Маленькая квота<b>0/3 → 0/1</b>не ниже total + 1</div>
     </div>
 
     <h2 id="scheme">Схема работы</h2>
     <div class="flow">
-      <div class="step"><b>1. Выбор</b><code>apply_buff("economy")</code>.</div>
+      <div class="step"><b>1. Выбор</b><code>apply_buff("quota_change_positive")</code>.</div>
       <div class="arrow">→</div>
-      <div class="step active"><b>2. Резка</b><code>quota_target -= randi_range(30, 70)</code>, минимум 1.</div>
+      <div class="step active"><b>2. Резка</b><code>quota_target = maxi(total_deposited + 1, quota_target − randi_range(30, 70))</code>.</div>
       <div class="arrow">→</div>
       <div class="step"><b>3. UI</b><code>deposits_changed.emit</code> — панель квоты обновляется.</div>
     </div>
@@ -69,7 +73,8 @@
     <div class="callout unity">
       <div class="callout-title">Из Unity</div>
       <p>
-        Прямой аналог <code>quotaTarget -= Random.Range(30, 70)</code> в методе баффа.
+        Прямой аналог
+        <code>quotaTarget = Mathf.Max(totalDeposited + 1, quotaTarget - Random.Range(30, 70))</code>.
         Никакой новой логики: всё остальное уже читает <code>quota_target</code>.
       </p>
     </div>
@@ -80,19 +85,17 @@
         <span class="file-tag">Scripts/Round/round_controller.gd</span>
         <h4>Резка квоты</h4>
         <p>
-          Нужно только добавить ветку в <code>apply_buff()</code> и два числа-константы.
-          Сигнал <code>deposits_changed</code> уже обновляет панель и прогресс-бар.
+          Одна ветка в <code>apply_buff()</code>. Ключевое — <code>maxi(total_deposited + 1, …)</code>:
+          квота после реза никогда не бывает уже выполненной. Раньше при <code>0/3</code> рез
+          давал <code>0/−27</code>, теперь — <code>0/1</code>.
         </p>
         <div class="code">
           <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — экономия</span><button class="copy-btn" type="button">Копировать</button></div>
-          <pre><code data-lang="gdscript">const QUOTA_CUT_MIN : int = 30
-const QUOTA_CUT_MAX : int = 70
-
-func apply_buff(buff_id: String) -> void:
+          <pre><code data-lang="gdscript">func apply_buff(buff_id: String):
 	match buff_id:
-		"economy":
-			var cut := randi_range(QUOTA_CUT_MIN, QUOTA_CUT_MAX)
-			quota_target = maxi(1, quota_target - cut)
+		"quota_change_positive":
+			var cut := randi_range(30, 70)
+			quota_target = maxi(total_deposited + 1, quota_target - cut)
 			deposits_changed.emit(total_deposited, buff_threshold)</code></pre>
         </div>
       </li>
@@ -118,7 +121,8 @@ func apply_buff(buff_id: String) -> void:
     <ol>
       <li>Выбери «Экономию» — число в панели квоты должно прыгнуть вниз.</li>
       <li>Выбери ещё раз — снова уменьшится на случайное число.</li>
-      <li>Убедись, что квота не может стать 0 или отрицательной.</li>
+      <li>Проверь минимум: при квоте <code>0/3</code> рез должен дать <code>0/1</code>.</li>
+      <li>Проверь «невыполненность»: при <code>250/300</code> рез не должен завершить квоту — минимум <code>250/251</code>.</li>
     </ol>
 
     <div class="chapter-nav">

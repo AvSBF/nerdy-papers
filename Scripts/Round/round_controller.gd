@@ -17,6 +17,8 @@ var quota_target : int = 3
 var points_per_paper : int = 1
 # дополнительная скорость
 var current_additional_speed : float = 0
+# количество предметов в руках
+var additional_held_papers : int = 0
 
 func _ready() -> void:
 	for storage in get_tree().get_nodes_in_group("paper_storage"):
@@ -65,4 +67,17 @@ func apply_buff(buff_id : String):
 			current_additional_speed += 0.25
 		"movement_speed_negative":
 			current_additional_speed -= 0.5
+		"quota_change_positive":
+			var cut := randi_range(30,70)
+			quota_target = maxi(total_deposited + 1, quota_target - cut)
+			deposits_changed.emit(total_deposited, buff_threshold)
+		"quota_change_negative":
+			quota_target += randi_range(30,70)
+			deposits_changed.emit(total_deposited, buff_threshold)
+		"more_hands":
+			additional_held_papers += 1
+			additional_held_papers = max(0,additional_held_papers)
+		"less_hands":
+			additional_held_papers -= 1
+			additional_held_papers = max(0,additional_held_papers)
 	return

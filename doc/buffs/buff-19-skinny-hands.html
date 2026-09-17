@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Скупые руки — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Скупые руки</h1>
+    <p class="lead">
+      Кто-то отрезал лишнюю руку: одновременно можно держать меньше бумажек.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "less_hands"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+      <span class="status impl">реализовано</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">✋</div>
+      <div>
+        <h4>Меньше бумажек в руке</h4>
+        <p>
+          Зеркало «Второй руки»: <code>additional_held_papers</code> уменьшается
+          на 1, но не ниже 0. При 0 предметов рука держит стандартную одну бумажку.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>1 бумажка</b>стандарт</div>
+      <div class="chip green">После выбора<b>по-прежнему 1</b>ниже 0 нельзя</div>
+    </div>
+
+    <div class="callout note">
+      <div class="callout-title">Метод реализации</div>
+      <p>
+        Фрагменты кода из проекта добавлю на страницу позже — по инструкции,
+        как сделано с изменением скорости.
+      </p>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Сначала выбери «Вторую руку» (2 бумажки), затем «Скупые руки» — должно вернуться к 1.</li>
+      <li>Проверь, что повторный выбор не опускает ниже 1 бумажки.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+</body>
+</html>

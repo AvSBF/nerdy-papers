@@ -34,9 +34,10 @@
     </p>
 
     <div class="buff-tags">
-      <span class="tag id">buff_id: "greed"</span>
+      <span class="tag id">buff_id: "quota_change_negative"</span>
       <span class="tag red">дебафф · красная</span>
       <span class="tag duration">весь раунд · стакается</span>
+      <span class="status impl">реализовано</span>
     </div>
 
     <h2 id="effect">Эффект</h2>
@@ -45,9 +46,9 @@
       <div>
         <h4>quota_target плюс случайное число (30–70)</h4>
         <p>
-          Зеркало «Экономии»: <code>apply_buff("greed")</code> увеличивает
-          <code>quota_target</code> на случайное число от 30 до 70. Каждый новый
-          выбор снова поднимает планку.
+          Зеркало «Экономии»: <code>apply_buff("quota_change_negative")</code>
+          увеличивает <code>quota_target</code> на случайное число от 30 до 70.
+          Каждый новый выбор снова поднимает планку.
         </p>
       </div>
     </div>
@@ -59,7 +60,7 @@
 
     <h2 id="scheme">Схема работы</h2>
     <div class="flow">
-      <div class="step"><b>1. Выбор</b><code>apply_buff("greed")</code>.</div>
+      <div class="step"><b>1. Выбор</b><code>apply_buff("quota_change_negative")</code>.</div>
       <div class="arrow">→</div>
       <div class="step active"><b>2. Рост</b><code>quota_target += randi_range(30, 70)</code>.</div>
       <div class="arrow">→</div>
@@ -72,19 +73,15 @@
         <span class="file-tag">Scripts/Round/round_controller.gd</span>
         <h4>Рост квоты</h4>
         <p>
-          Та же константа, что у «Экономии», только со знаком плюс. Нижняя граница
-          не нужна, верхняя — нет, квота просто растёт.
+          Тот же диапазон, что у «Экономии», только со знаком плюс. Нижняя граница
+          не нужна — квота просто растёт.
         </p>
         <div class="code">
           <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — жадность</span><button class="copy-btn" type="button">Копировать</button></div>
-          <pre><code data-lang="gdscript">const QUOTA_RAISE_MIN : int = 30
-const QUOTA_RAISE_MAX : int = 70
-
-func apply_buff(buff_id: String) -> void:
+          <pre><code data-lang="gdscript">func apply_buff(buff_id: String):
 	match buff_id:
-		"greed":
-			var raise := randi_range(QUOTA_RAISE_MIN, QUOTA_RAISE_MAX)
-			quota_target += raise
+		"quota_change_negative":
+			quota_target += randi_range(30, 70)
 			deposits_changed.emit(total_deposited, buff_threshold)</code></pre>
         </div>
       </li>

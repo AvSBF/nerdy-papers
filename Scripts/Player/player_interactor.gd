@@ -18,12 +18,16 @@ const RISE_TIME : float = 0.15
 @onready var player : CharacterBody3D = get_parent()
 @onready var camera : Camera3D = player.get_node("Camera3D")
 @onready var hold_point : Node3D = camera.get_node("HoldPoint")
+@onready var _round : RoundController
 
 var current_target : Node = null
 var held_papers : Array[Paper] = []
 var max_held_papers : int = 1
 var _flying_paper : Paper = null
 var _throwing : bool = false
+
+func _ready():
+	_round = get_tree().get_first_node_in_group("round_controller")
 
 func _physics_process(_delta: float) -> void:
 	_update_target()
@@ -76,7 +80,7 @@ func _on_button_interacted(button: Node) -> void:
 
 func _on_paper_interacted(paper: Node) -> void:
 	var body := paper as Paper
-	if body == null or _flying_paper != null or _throwing or held_papers.size() >= max_held_papers:
+	if body == null or _flying_paper != null or _throwing or held_papers.size() >= (max_held_papers + _round.additional_held_papers):
 		return
 	_flying_paper = body
 	body.set_highlighted(false)

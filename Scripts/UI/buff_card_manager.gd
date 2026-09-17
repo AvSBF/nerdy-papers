@@ -5,15 +5,16 @@ signal card_chosen(card_type: String)
 @export var card_scene : PackedScene
 
 const GOOD_POOL : Array[Dictionary] = [
-	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
 	{"title": "Extra points", "desc": "Each paper gives +1 extra point", "buff_id" : "extra_points"},
-	{"title": "Speed Increase", "desc": "Adds 0.25 to movement speed", "buff_id" : "movement_speed_positive"},
+	{"title": "Speed Change", "desc": "Adds 0.25 to movement speed", "buff_id" : "movement_speed_positive"},
+	{"title": "Quota Change", "desc": "Now you need less papers for quota", "buff_id" : "quota_change_positive"},
+	{"title": "One More Hand?", "desc": "Someone behind you gives you more hands to hold your papers", "buff_id" : "more_hands"},
 ]
 
 const BAD_POOL : Array[Dictionary] = [
-	{"title": "Speed Decrease", "desc": "Takes 0.5 from movement speed", "buff_id" : "movement_speed_negative"},
-	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
-	{"title": "Туман в голове", "desc": "Заглушка. Ничего пока не отнимает."},
+	{"title": "Speed Change", "desc": "Takes 0.5 from movement speed", "buff_id" : "movement_speed_negative"},
+	{"title": "Quota Change", "desc": "Now you need even more papers for quota", "buff_id" : "quota_change_negative"},
+	{"title": "Where is my arm", "desc": "Someone cut off your extra arm. Now you can hold less papers at once", "buff_id" : "less_hands"},
 ]
 
 @onready var overlay : Control = $Overlay
