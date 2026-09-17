@@ -9,7 +9,7 @@ script = ExtResource("1_debug")
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 300.0
-offset_bottom = 150.0
+offset_bottom = 250.0
 
 [node name="Margin" type="MarginContainer" parent="Panel"]
 theme_override_constants/margin_left = 8
@@ -56,3 +56,26 @@ text = "Удалить все бумажки"
 
 [node name="ForceCardsButton" type="Button" parent="Panel/Margin/VBox"]
 text = "Показать карточки"
+
+[node name="DepositRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+
+[node name="DepositCountSlider" type="HSlider" parent="Panel/Margin/VBox/DepositRow"]
+custom_minimum_size = Vector2(120, 0)
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 100.0
+step = 1.0
+value = 5.0
+
+[node name="DepositCountValue" type="Label" parent="Panel/Margin/VBox/DepositRow"]
+custom_minimum_size = Vector2(34, 0)
+text = "5"
+
+[node name="DepositButton" type="Button" parent="Panel/Margin/VBox/DepositRow"]
+text = "Бумажки"
+
+[node name="CompleteQuotaButton" type="Button" parent="Panel/Margin/VBox"]
+text = "Выполнить квоту"
+
+[node name="NextQuotaButton" type="Button" parent="Panel/Margin/VBox"]
+text = "Следующая квота"
