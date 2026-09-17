@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://bq7w2m5n8k3xa" path="res://Prefabs/paper_storage.tscn" id="4_storage"]
 [ext_resource type="PackedScene" uid="uid://bcdkmwvhqb7qf" path="res://Prefabs/DebugMenu.tscn" id="5_debug"]
 [ext_resource type="PackedScene" uid="uid://b1c4rdu1c4rda" path="res://Prefabs/BuffCardUI.tscn" id="6_buffcard"]
+[ext_resource type="PackedScene" uid="uid://crud2rvtp0ttd" path="res://Scenes/QuotaUI.tscn" id="7_y7y61"]
 
 [sub_resource type="Environment" id="Environment_mmoe8"]
 background_mode = 1
@@ -43,21 +44,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53218794, 0.025000572, 2.04
 [node name="Paper Creating Table" parent="." unique_id=1739078887 instance=ExtResource("3_5nsto")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7072947, 0.025000095, -1.580008)
 
-[node name="Paper Storage" parent="." unique_id=1837465201 instance=ExtResource("4_storage")]
+[node name="Paper Storage" parent="." unique_id=1837465201 groups=["paper_storage"] instance=ExtResource("4_storage")]
 transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, -2.245055, 0.025000095, 5.419992)
 
-[node name="Paper Storage2" parent="." unique_id=758220714 instance=ExtResource("4_storage")]
+[node name="Paper Storage2" parent="." unique_id=758220714 groups=["paper_storage"] instance=ExtResource("4_storage")]
 transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, -0.24505496, 0.025000095, 5.419992)
 paper_type = 2
 
-[node name="Paper Storage3" parent="." unique_id=454407692 instance=ExtResource("4_storage")]
+[node name="Paper Storage3" parent="." unique_id=454407692 groups=["paper_storage"] instance=ExtResource("4_storage")]
 transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, 1.754945, 0.025000095, 5.419992)
 paper_type = 3
 
-[node name="Paper Storage4" parent="." unique_id=743524894 instance=ExtResource("4_storage")]
+[node name="Paper Storage4" parent="." unique_id=743524894 groups=["paper_storage"] instance=ExtResource("4_storage")]
 transform = Transform3D(-1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, -1, 3.754945, 0.025000095, 5.419992)
 paper_type = 4
 
 [node name="DebugMenu" parent="." unique_id=669537794 instance=ExtResource("5_debug")]
 
 [node name="BuffCardUI" parent="." unique_id=733271258 instance=ExtResource("6_buffcard")]
+
+[node name="QuotaUI" parent="." unique_id=1553816689 instance=ExtResource("7_y7y61")]

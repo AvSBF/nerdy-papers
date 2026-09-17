@@ -1,4 +1,5 @@
 extends Node3D
+class_name PaperStorage
 
 signal paper_deposited(count: int)
 

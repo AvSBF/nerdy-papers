@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://crud2rvtp0ttd"]
+
+[ext_resource type="Script" uid="uid://bdgctql48o0j5" path="res://Scripts/Quota/quota_controller.gd" id="1_rtav1"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_5ovjq"]
+font_size = 40
+
+[node name="QuotaUI" type="CanvasLayer" unique_id=1553816689]
+script = ExtResource("1_rtav1")
+
+[node name="Quota Detials" type="Label" parent="." unique_id=1656292270]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -277.0
+offset_bottom = 71.0
+grow_horizontal = 0
+text = "0 / 100"
+label_settings = SubResource("LabelSettings_5ovjq")
+horizontal_alignment = 2
