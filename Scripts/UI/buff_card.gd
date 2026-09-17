@@ -20,7 +20,8 @@ func setup(data: Dictionary) -> void:
 	card_type = str(data.get("type", "green"))
 	var color := GREEN_COLOR if card_type == "green" else RED_COLOR
 	top_stripe.color = color
-	type_label.text = "БАФФ" if card_type == "green" else "ДЕБАФФ"
+	type_label.add_theme_color_override("font_color", color)
+	type_label.text = "BUFF" if card_type == "green" else "DEBUFF"
 	title_label.text = str(data.get("title", "Без названия"))
 	desc_label.text = str(data.get("desc", "Заглушка"))
 

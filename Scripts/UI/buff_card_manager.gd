@@ -17,7 +17,7 @@ const BAD_POOL : Array[Dictionary] = [
 ]
 
 @onready var overlay : Control = $Overlay
-@onready var cards_container : HBoxContainer = $Overlay/Center/Cards
+@onready var cards_container : HBoxContainer = $Overlay/Center/Panel/VBox/Cards
 
 var _round : Node
 var _cards_active : bool = false

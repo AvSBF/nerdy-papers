@@ -2,19 +2,88 @@
 
 [ext_resource type="Script" uid="uid://bdgctql48o0j5" path="res://Scripts/Quota/quota_controller.gd" id="1_rtav1"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_5ovjq"]
-font_size = 40
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.11, 0.13, 0.17, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.4, 0.5, 0.55)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 8
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="LabelSettings" id="LabelSettings_title"]
+font_size = 21
+font_color = Color(0.55, 0.6, 0.68, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_value"]
+font_size = 24
+font_color = Color(0.92, 0.95, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
+bg_color = Color(0.07, 0.08, 0.11, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
+bg_color = Color(0.3, 0.62, 0.95, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [node name="QuotaUI" type="CanvasLayer" unique_id=1553816689]
 script = ExtResource("1_rtav1")
 
-[node name="Quota Detials" type="Label" parent="." unique_id=1656292270]
+[node name="Panel" type="PanelContainer" parent="." unique_id=1656292271]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -277.0
-offset_bottom = 71.0
+offset_left = -220.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 88.0
 grow_horizontal = 0
-text = "0 / 100"
-label_settings = SubResource("LabelSettings_5ovjq")
-horizontal_alignment = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=1656292272]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=1656292273]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TopRow" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=1656292277]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox/TopRow" unique_id=1656292274]
+layout_mode = 2
+offset_transform_enabled = true
+offset_transform_position = Vector2(-4.63, 0)
+text = "QUOTA"
+label_settings = SubResource("LabelSettings_title")
+
+[node name="Value" type="Label" parent="Panel/Margin/VBox/TopRow" unique_id=1656292275]
+layout_mode = 2
+text = "0 / 3"
+label_settings = SubResource("LabelSettings_value")
+
+[node name="Progress" type="ProgressBar" parent="Panel/Margin/VBox" unique_id=1656292276]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
+show_percentage = false

@@ -1,6 +1,7 @@
 extends CanvasLayer
 
-@onready var quota_label : Label = $"Quota Detials"
+@onready var value_label : Label = $Panel/Margin/VBox/TopRow/Value
+@onready var progress_bar : ProgressBar = $Panel/Margin/VBox/Progress
 
 var _round : Node
 
@@ -10,8 +11,10 @@ func _ready():
 		_round.deposits_changed.connect(_on_deposits_changed)
 		_update_label()
 
-func _on_deposits_changed(_current_deposited: int, _required_for_buff: int) -> void:
+func _on_deposits_changed(_total_deposited: int, _buff_threshold: int) -> void:
 	_update_label()
 
 func _update_label():
-	quota_label.text = "%d / %d" % [_round.current_deposited, _round.current_quota]
+	value_label.text = "%d / %d" % [_round.total_deposited, _round.quota_target]
+	progress_bar.max_value = _round.quota_target
+	progress_bar.value = _round.total_deposited

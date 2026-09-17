@@ -1,36 +1,91 @@
 [gd_scene format=3 uid="uid://b1c4rdu1c4rda"]
 
-[ext_resource type="Script" path="res://Scripts/UI/buff_card_manager.gd" id="1_mgr"]
+[ext_resource type="Script" uid="uid://c7af0gnt0qpax" path="res://Scripts/UI/buff_card_manager.gd" id="1_mgr"]
 [ext_resource type="PackedScene" uid="uid://b1c4rdb1c4rda" path="res://Prefabs/BuffCard.tscn" id="2_card"]
 
-[node name="BuffCardUI" type="CanvasLayer"]
-layer = 10
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 36.0
+content_margin_top = 30.0
+content_margin_right = 36.0
+content_margin_bottom = 34.0
+bg_color = Color(0.1, 0.12, 0.16, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.4, 0.5, 0.5)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 16
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="LabelSettings" id="LabelSettings_title"]
+font_size = 34
+font_color = Color(0.95, 0.97, 1, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_subtitle"]
+font_size = 17
+font_color = Color(0.72, 0.78, 0.88, 0.9)
+
+[node name="BuffCardUI" type="CanvasLayer" unique_id=1147787432]
 process_mode = 3
+layer = 10
 script = ExtResource("1_mgr")
 card_scene = ExtResource("2_card")
 
-[node name="Overlay" type="Control" parent="."]
+[node name="Overlay" type="Control" parent="." unique_id=1226576798]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Dimmer" type="ColorRect" parent="Overlay"]
-anchors_preset = 15
+[node name="Dimmer" type="ColorRect" parent="Overlay" unique_id=1167234487]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.55)
+color = Color(0, 0, 0, 0.6)
 
-[node name="Center" type="CenterContainer" parent="Overlay"]
-anchors_preset = 15
+[node name="Center" type="CenterContainer" parent="Overlay" unique_id=1728424250]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Cards" type="HBoxContainer" parent="Overlay/Center"]
+[node name="Panel" type="PanelContainer" parent="Overlay/Center" unique_id=2021418624]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Overlay/Center/Panel" unique_id=1482848379]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="Header" type="VBoxContainer" parent="Overlay/Center/Panel/VBox" unique_id=814856666]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="Title" type="Label" parent="Overlay/Center/Panel/VBox/Header" unique_id=582231670]
+layout_mode = 2
+text = "CHOOSE A CARD"
+label_settings = SubResource("LabelSettings_title")
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Overlay/Center/Panel/VBox/Header" unique_id=514602058]
+layout_mode = 2
+text = "A buff helps, a debuff hurts"
+label_settings = SubResource("LabelSettings_subtitle")
+horizontal_alignment = 1
+
+[node name="Cards" type="HBoxContainer" parent="Overlay/Center/Panel/VBox" unique_id=666802479]
+layout_mode = 2
 theme_override_constants/separation = 28
 alignment = 1
