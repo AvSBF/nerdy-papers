@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Бонусные очки за бумажку — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body data-chapter="buff-01">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Бонусные очки за бумажку</h1>
+    <p class="lead">
+      Обычно каждая внесённая бумажка даёт +1 очко к прогрессу раунда.
+      Этот бафф временно повышает цену бумажки: пока он активен, один закид
+      приносит +2 очка.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "extra_points"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">длительность: 5 закидываний</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">✚</div>
+      <div>
+        <h4>Каждая бумажка приносит ×2 очков</h4>
+        <p>
+          Множитель живёт в <code>RoundController</code> как переменная
+          <code>points_per_paper</code>. Бафф поднимает её с 1 до 2 на следующие
+          5 закидов, потом она возвращается к 1. Сброс — и при новом раунде.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без баффа<b>1 очко / закид</b>total_deposited += 1</div>
+      <div class="chip green">С баффом<b>2 очка / закид</b>total_deposited += 2</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <p>
+      Логика простая: ящик по-прежнему шлёт сигнал «бумажка засчитана», а решает,
+      сколько очков это стоит, уже <code>RoundController</code>. Бафф лишь меняет
+      его переменную.
+    </p>
+
+    <div class="flow">
+      <div class="step"><b>1. Закид</b>Ящик шлёт <code>paper_deposited</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Очки</b><code>RoundController</code> прибавляет <code>points_per_paper</code> (1 или 2).</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Расход</b>Счётчик жизни баффа уменьшается. Дошёл до 0 — множитель падает в 1.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>4. UI</b>Прогресс квоты обновляется сам: он читает <code>total_deposited</code>.</div>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        Это аналог «статов»: <code>points_per_paper</code> — как <code>int</code>-переменная
+        на <code>GameManager</code>, а <code>apply_buff()</code> — метод, который её меняет
+        с таймером возврата. Всё остальное (ящик, UI) подписывается на сигналы и не знает
+        о баффе вообще.
+      </p>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Считаем очки через множитель</h4>
+        <p>
+          Заводим переменные и меняем одно прибавление. Счётчик <code>buff_uses_left</code>
+          возвращает множитель в норму, когда бафф «выдохся».
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — множитель очков</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var points_per_paper : int = 1
+var buff_uses_left : int = 0
+
+const EXTRA_POINTS_USES : int = 5   # сколько закидов живёт бафф
+
+func _on_paper_deposited(_count: int) -> void:
+	total_deposited += points_per_paper   # было: += 1
+	deposits_changed.emit(total_deposited, buff_threshold)
+	if total_deposited >= buff_threshold:
+		buff_required_reached.emit()
+	if total_deposited >= quota_target:
+		quota_reached.emit()
+	if buff_uses_left > 0:
+		buff_uses_left -= 1
+		if buff_uses_left == 0:
+			points_per_paper = 1          # бафф закончился</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Метод apply_buff()</h4>
+        <p>
+          Одна точка входа для всех будущих баффов: по <code>buff_id</code> решаем,
+          что менять. Пока — только этот эффект.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — применение баффа</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"extra_points":
+			points_per_paper = 2
+			buff_uses_left = EXTRA_POINTS_USES</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/UI/buff_card_manager.gd</span>
+        <h4>Настоящая карточка вместо заглушки</h4>
+        <p>
+          В <code>GOOD_POOL</code> появляется запись с <code>buff_id</code>, а при клике
+          менеджер передаёт бафф в <code>RoundController</code>.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">buff_card_manager.gd — карточка и выбор</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const GOOD_POOL : Array[Dictionary] = [
+	{"title": "Бонусные очки", "desc": "Каждая бумажка приносит +1 очко (×2).",
+	 "buff_id": "extra_points"},
+	# ... остальные заглушки
+]
+
+func _on_card_pressed(card: BuffCard) -> void:
+	card_chosen.emit(card.card_type)
+	if _round != null:
+		if not card.buff_id.is_empty():
+			_round.apply_buff(card.buff_id)
+		_round.roll_required()
+	_hide_cards()</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/UI/buff_card.gd</span>
+        <h4>Карточка хранит buff_id</h4>
+        <p>
+          Сейчас карточка знает только <code>card_type</code>. Добавляем поле, чтобы
+          менеджер при клике понял, какой именно бафф выбран.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">buff_card.gd — поле buff_id</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var buff_id : String = ""
+
+func setup(data: Dictionary) -> void:
+	card_type = str(data.get("type", "green"))
+	buff_id = str(data.get("buff_id", ""))
+	# ...</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <p>
+          Чтобы бафф не переживал раунд, возвращаем множитель в 1 в
+          <code>reset_round()</code>.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — сброс</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	points_per_paper = 1
+	buff_uses_left = 0
+	quota_target = 3
+	total_deposited = 0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: 1 против 2 очков за бумажку</h2>
+    <p>
+      Жми «Закинуть бумажку» и следи за очками. Потом включи бафф — следующие
+      5 бумажек принесут по 2 очка.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>множитель очков за закид</span></div>
+      <div class="demo-body">
+        <canvas id="pts-canvas" data-h="230"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="deposit">Закинуть бумажку</button>
+          <button type="button" id="buff">Активировать бафф (×2)</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Запусти <code>Scenes/World.tscn</code>.</li>
+      <li>Кидай бумажки в ящик, пока не выпадут карточки (от 3 до 5 закидов).</li>
+      <li>Выбери зелёную карточку «Бонусные очки».</li>
+      <li>Следующие 5 бумажек должны прыгать прогресс на 2, а не на 1.</li>
+      <li>Проверь, что после 5 закидов счёт снова идёт по 1, а в новом раунде бафф не работает.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="../buff-cards/index.html"><span class="dir">← Назад</span>Буфф-карточки: поток игры</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script>
+/* ---------- интерактив: множитель очков за закид ---------- */
+(function () {
+  var canvas = document.getElementById("pts-canvas");
+  var depositBtn = document.getElementById("deposit");
+  var buffBtn = document.getElementById("buff");
+  var resetBtn = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+
+  var view = NP.fitCanvas(canvas);
+  var state = { total: 0, threshold: 12, pp: 1, usesLeft: 0, done: false };
+
+  function resetState() {
+    state = { total: 0, threshold: 12, pp: 1, usesLeft: 0, done: false };
+  }
+
+  depositBtn.addEventListener("click", function () {
+    if (state.done) return;
+    state.total += state.pp;
+    if (state.usesLeft > 0) {
+      state.usesLeft--;
+      if (state.usesLeft === 0) state.pp = 1;
+    }
+    if (state.total >= state.threshold) state.done = true;
+  });
+
+  buffBtn.addEventListener("click", function () {
+    if (state.done || state.pp === 2) return;
+    state.pp = 2;
+    state.usesLeft = 5;
+  });
+
+  resetBtn.addEventListener("click", function () { resetState(); });
+
+  function draw() {
+    var ctx = view.ctx;
+    ctx.clearRect(0, 0, view.w, view.h);
+    var mid = view.h / 2;
+
+    // прогресс квоте
+    var bw = Math.min(view.w * 0.72, 460);
+    var bx = view.w / 2 - bw / 2;
+    var pct = Math.min(1, state.total / state.threshold);
+    ctx.fillStyle = "#1b2632";
+    ctx.fillRect(bx, mid - 12, bw, 24);
+    ctx.fillStyle = state.done ? "#e3b341" : (state.pp === 2 ? "#29924f" : "#478cbf");
+    ctx.fillRect(bx, mid - 12, bw * pct, 24);
+    ctx.strokeStyle = "#465060";
+    ctx.strokeRect(bx, mid - 12, bw, 24);
+    ctx.fillStyle = "#93a1b1";
+    ctx.font = "12px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(state.done ? "КВОТА ВЫПОЛНЕНА" : ("очки: " + state.total + " / " + state.threshold), view.w / 2, mid + 6);
+
+    // инфо о баффе
+    ctx.textAlign = "left";
+    ctx.font = "13px system-ui";
+    var y = mid - 44;
+    if (state.pp === 2) {
+      ctx.fillStyle = "#7ee787";
+      ctx.fillText("БАФФ ×2 активен: 1 бумажка = 2 очка", bx, y);
+      ctx.fillStyle = "#93a1b1";
+      ctx.fillText("осталось закидов: " + state.usesLeft, bx, y + 18);
+    } else {
+      ctx.fillStyle = "#93a1b1";
+      ctx.fillText("без баффа: 1 бумажка = 1 очко", bx, y);
+    }
+    ctx.textAlign = "left";
+    ctx.font = "13px system-ui";
+    ctx.fillStyle = "#93a1b1";
+
+    if (readout) {
+      readout.textContent = state.pp === 2
+        ? "множитель ×2 (" + state.usesLeft + " закидов осталось)"
+        : "множитель ×1";
+    }
+  }
+
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>
