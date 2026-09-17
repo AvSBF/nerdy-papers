@@ -11,7 +11,7 @@ const STACK_SPACING : float = 0.05
 const STACK_BASE_Y : float = 0.55
 const RISE_TIME : float = 0.15
 
-@export var interaction_distance : float = 3.0
+@export var interaction_distance : float = 1.0
 @export var throw_speed : float = 5.0
 @export_flags_3d_physics var interaction_mask : int = 0xFFFFFFFF
 
@@ -66,7 +66,7 @@ func interact_with_current() -> void:
 func _find_target() -> Node:
 	return InteractionRaycast.get_node_in_front(
 		camera,
-		interaction_distance,
+		interaction_distance + _round.additional_interaction_distance,
 		func(node : Node) -> bool:
 			for group in GROUPS:
 				if node.is_in_group(group):

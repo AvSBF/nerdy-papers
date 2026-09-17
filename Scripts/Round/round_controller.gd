@@ -19,6 +19,9 @@ var points_per_paper : int = 1
 var current_additional_speed : float = 0
 # количество предметов в руках
 var additional_held_papers : int = 0
+# длина подбора
+var additional_interaction_distance : float = 0
+const INTERACTION_STEP : float = 0.25
 
 func _ready() -> void:
 	for storage in get_tree().get_nodes_in_group("paper_storage"):
@@ -80,4 +83,9 @@ func apply_buff(buff_id : String):
 		"less_hands":
 			additional_held_papers -= 1
 			additional_held_papers = max(0,additional_held_papers)
+		"interaction_range_positive":
+			additional_interaction_distance += INTERACTION_STEP
+		"interaction_range_negative":
+			additional_interaction_distance -= INTERACTION_STEP
+			additional_interaction_distance = max(0,additional_interaction_distance)
 	return

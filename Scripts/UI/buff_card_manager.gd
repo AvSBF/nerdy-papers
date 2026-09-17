@@ -9,12 +9,14 @@ const GOOD_POOL : Array[Dictionary] = [
 	{"title": "Speed Change", "desc": "Adds 0.25 to movement speed", "buff_id" : "movement_speed_positive"},
 	{"title": "Quota Change", "desc": "Now you need less papers for quota", "buff_id" : "quota_change_positive"},
 	{"title": "One More Hand?", "desc": "Someone behind you gives you more hands to hold your papers", "buff_id" : "more_hands"},
+	{"title": "Arm length", "desc": "Wow! You've got long arms now", "buff_id" : "interaction_range_positive"},
 ]
 
 const BAD_POOL : Array[Dictionary] = [
 	{"title": "Speed Change", "desc": "Takes 0.5 from movement speed", "buff_id" : "movement_speed_negative"},
 	{"title": "Quota Change", "desc": "Now you need even more papers for quota", "buff_id" : "quota_change_negative"},
 	{"title": "Where is my arm", "desc": "Someone cut off your extra arm. Now you can hold less papers at once", "buff_id" : "less_hands"},
+	{"title": "Arm length", "desc": "T-Rex move for arms. Less interaction distance.", "buff_id" : "interaction_range_negative"},
 ]
 
 @onready var overlay : Control = $Overlay
