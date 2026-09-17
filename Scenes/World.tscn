@@ -68,3 +68,4 @@ paper_type = 4
 
 [node name="Round Controller" type="Node" parent="." unique_id=944369856 groups=["round_controller"]]
 script = ExtResource("8_q2d71")
+quota_increase_multiplier_range = Vector2(1.1, 2)
