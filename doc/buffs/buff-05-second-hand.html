@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вторая рука — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Вторая рука</h1>
+    <p class="lead">
+      Игрок держит больше бумажек одновременно. Больше ноши — меньше пробежек
+      к столу-раздатчику.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "second_hand"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">✋</div>
+      <div>
+        <h4>+1 слот бумажек за выбор</h4>
+        <p>
+          Сейчас игрок может нести 1 бумажку. Бафф добавляет слоты: 1 → 2 → 3.
+          Потолок — 3, чтобы стек не ломал физику стопки.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без баффа<b>1 бумажка</b>max_held_papers = 1</div>
+      <div class="chip green">1-й выбор<b>2 бумажки</b>max_held_papers = 2</div>
+      <div class="chip green">2-й выбор<b>3 бумажки</b>max_held_papers = 3</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("second_hand")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Слоты</b><code>hand_slots += 1</code> (потолок 3).</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>3. Подбор</b>Интерактор разрешает брать, пока рук меньше <code>hand_slots</code>.</div>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        Аналог <code>maxHeldItems</code> на игроке. Godot уже умеет стопку:
+        <code>_stack_offset_for_index()</code> раскладывает бумажки по вертикали.
+      </p>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Слоты руки</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — слоты</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const MAX_HAND_SLOTS : int = 3
+var hand_slots : int = 1
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"second_hand":
+			hand_slots = mini(MAX_HAND_SLOTS, hand_slots + 1)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Player/player_interactor.gd</span>
+        <h4>Читаем слоты из раунда</h4>
+        <p>
+          Экспорт <code>max_held_papers</code> заменяем ссылкой на раунд. Проверка
+          при подборе остаётся той же.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">player_interactor.gd — лимит руки</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var _round : Node
+
+func _ready() -> void:
+	_round = get_tree().get_first_node_in_group("round_controller")
+
+func max_held_papers() -> int:
+	return _round.hand_slots if _round != null else 1
+
+func _on_paper_interacted(paper: Node) -> void:
+	var body := paper as Paper
+	if body == null or _flying_paper != null or _throwing \
+			or held_papers.size() >= max_held_papers():
+		return
+	# ...</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	hand_slots = 1
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: наполняй руку</h2>
+    <p>
+      Сначала в руке 1 слот. Выбери бафф, потом бери бумажки — они заполняют
+      стопку сверху вниз.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>слоты руки</span></div>
+      <div class="demo-body">
+        <canvas id="hand-canvas" data-h="180"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать бафф «Вторая рука»</button>
+          <button type="button" id="take">Взять бумажку</button>
+          <button type="button" id="throw">Бросить все</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Вторую руку».</li>
+      <li>Подойди к столу и возьми бумажку — теперь можно взять ещё одну (подсказка «E» остаётся).</li>
+      <li>Бросай по одной — стопка должна схлопываться без телепортов.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("hand-canvas");
+  var pick = document.getElementById("pick");
+  var take = document.getElementById("take");
+  var thr = document.getElementById("throw");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { slots: 1, held: 0 };
+
+  function draw() {
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+    var n = state.slots;
+    var bw = 60, gap = 24;
+    var total = n * bw + (n - 1) * gap;
+    var x0 = view.w / 2 - total / 2;
+    var y0 = view.h / 2 - 40;
+    for (var i = 0; i < n; i++) {
+      var x = x0 + i * (bw + gap);
+      ctx.fillStyle = "#161b22";
+      ctx.strokeStyle = i < state.held ? "#29924f" : "#465060";
+      ctx.lineWidth = i < state.held ? 2 : 1;
+      ctx.fillRect(x, y0, bw, 80);
+      ctx.strokeRect(x, y0, bw, 80);
+      if (i < state.held) {
+        ctx.fillStyle = "#e3b341";
+        ctx.fillRect(x + 12, y0 + 14 + i * 12, bw - 24, 10);
+      }
+      ctx.fillStyle = "#93a1b1";
+      ctx.font = "11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("слот " + (i + 1), x + bw / 2, y0 + 96);
+      ctx.textAlign = "left";
+    }
+    if (state.held >= state.slots) {
+      BuffDemo.line(view, { x: 20, y: 20, text: "руки полны — бросай", color: "#e3b341" });
+    } else {
+      BuffDemo.line(view, { x: 20, y: 20, text: "слоты: " + state.slots + " · в руке: " + state.held, color: "#93a1b1" });
+    }
+    if (readout) readout.textContent = "слотов: " + state.slots + ", в руке: " + state.held;
+  }
+
+  pick.addEventListener("click", function () { state.slots = Math.min(3, state.slots + 1); draw(); });
+  take.addEventListener("click", function () { if (state.held < state.slots) { state.held++; draw(); } });
+  thr.addEventListener("click", function () { state.held = 0; draw(); });
+  reset.addEventListener("click", function () { state = { slots: 1, held: 0 }; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>

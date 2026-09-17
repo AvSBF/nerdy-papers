@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10. Окантовка бумаги при наведении — Nerdy Papers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chapter="10-paper-outline">
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>учебник по Godot</small></span>
+    </a>
+    <nav id="chapter-nav"></nav>
+    <div class="toc" id="toc"></div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ГЛАВА 10 · БОНУС</div>
+    <h1>Окантовка бумаги при наведении</h1>
+    <p class="lead">
+      Навёл курсор на бумагу — вокруг неё загорается белая окантовка. Внутри — копия коробки,
+      надутая чуть больше, с одним <code>cull_front</code> и обычным depth-test. Разбираем,
+      почему этих двух строк хватает, на интерактивной 3D-схеме.
+    </p>
+
+    <h2 id="task">Задача</h2>
+    <p>При наведении на бумагу должна появляться <b>внешняя белая окантовка</b> вокруг силуэта. Требования:</p>
+    <ul>
+      <li>окантовка видна <b>поверх объектов позади</b> бумаги (пол, стол, бумажки в стопке);</li>
+      <li>но <b>не закрашивает саму бумагу</b> ни под каким углом.</li>
+    </ul>
+    <p>Никакого «нарисовать рамку поверх экрана»: окантовка — это настоящий 3D-меш, поэтому она честно
+    реагирует на ракурс и умеет прятаться за объектами, которые ближе к камере.</p>
+
+    <h2 id="hover">Ховер уже есть</h2>
+    <p>Детект наведения мы не пишем — он уже работает. Каждый физический тик
+    <code>Scripts/Player/player_interactor.gd</code> делает рейкаст из камеры и при смене цели
+    испускает сигнал <code>target_changed</code>. Бумага входит в группу <code>"paper"</code> —
+    её добавляет <code>paper_creator.gd</code> при спавне. То есть нам нужен только «выход»:
+    показать/спрятать окантовку у текущей цели.</p>
+
+    <h2 id="idea">Идея: перевёрнутый корпус</h2>
+    <p>Классический приём для контурной подсветки — <b>перевёрнутый корпус</b> (inverted hull).</p>
+    <ol>
+      <li>Берём точную копию меша бумаги (та же коробка).</li>
+      <li>Увеличиваем её — <code>scale</code> — это «корпус».</li>
+      <li>Красим корпус в белый.</li>
+      <li>Переворачиваем куллинг (<code>cull_front</code>) и оставляем depth-test как есть.</li>
+    </ol>
+    <p>Корпус — это замкнутая коробка чуть больше бумаги. Он «выглядывает» из-за силуэта только полоской,
+    а всё, что лежит за передней поверхностью самой бумаги, закрывается ей через depth-test. Итог —
+    белое кольцо вокруг контура, которое никогда не заливает саму бумагу.</p>
+
+    <div class="callout note">
+      <div class="callout-title">Аналогия</div>
+      <p>Представь рамку для фотографии: это тот же лист, только чуть больше и белый, положенный под фото.
+      Из-под фото видна только каёмка по краям.</p>
+    </div>
+
+    <h2 id="shader">Шейдер: cull_front</h2>
+    <p>Весь «умный» код — в двух строках. Файл <code>Shaders/paper_outline.gdshader</code>:</p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Shaders/paper_outline.gdshader</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="glsl">shader_type spatial;
+render_mode unshaded, cull_front, shadows_disabled;
+
+void fragment() {
+	ALBEDO = vec3(1.0);   // чисто белый
+	ALPHA = 1.0;
+}</code></pre>
+    </div>
+
+    <p>Что тут происходит:</p>
+    <ul>
+      <li><code>unshaded</code> — не нужен свет, корпус всегда ровно белый.</li>
+      <li><code>cull_front</code> — ключевая строка. Обычный куллинг (<code>cull_back</code>) рисует грани,
+      смотрящие на камеру, и отбрасывает задние. <code>cull_front</code> — наоборот: рисует только грани,
+      отвернутые от камеры. Для корпуса это значит, что мы видим только ту его часть, что выпирает
+      за силуэт бумаги.</li>
+      <li><code>shadows_disabled</code> — корпус не бросает тень и не ловит её.</li>
+    </ul>
+
+    <div class="callout unity">
+      <div class="callout-title">cull_front простыми словами</div>
+      <p>У каждой грани 3D-объекта есть направление (нормаль). GPU не рисует грани «спиной к нам», чтобы
+      не тратить время на невидимое. <code>cull_front</code> инвертирует выбор: рисуем только «задние»
+      грани. Снаружи закрытая коробка при таком куллинге выглядит почти пустой — видны лишь те куски,
+      которые торчат из-за краёв. Именно эти торчащие куски и образуют окантовку.</p>
+    </div>
+
+    <h2 id="scene">Узел Outline в сцене</h2>
+    <p>В <code>Prefabs/paper.tscn</code> добавлен дочерний <code>MeshInstance3D</code> с тем же мешем,
+    материалом-шейдером и скриптом управления:</p>
+
+    <div class="tree">
+      <ul>
+        <li><span class="node-name">Paper</span><span class="node-type">RigidBody3D</span><span class="badge script">paper.gd</span>
+          <ul>
+            <li><span class="node-name">MeshInstance3D</span><span class="node-type">MeshInstance3D</span><span class="badge group">группа "paper"</span></li>
+            <li><span class="node-name">CollisionShape3D</span><span class="node-type">CollisionShape3D</span></li>
+            <li><span class="node-name">TypeLabel</span><span class="node-type">Label3D</span></li>
+            <li><span class="node-name">Outline</span><span class="node-type">MeshInstance3D</span><span class="badge script">paper_outline.gd</span></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <p>Трансформ у <code>Outline</code> тот же, что у <code>MeshInstance3D</code>, а увеличение задаётся
+    не в сцене, а скриптом — через <code>scale</code>.</p>
+
+    <h2 id="script">Скрипт paper_outline.gd</h2>
+    <p>Он хранит толщину и умеет включать/выключать окантовку:</p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Paper/paper_outline.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">class_name PaperOutline
+extends MeshInstance3D
+
+@export var thickness : Vector3 = Vector3(0.06, 0.15, 0.06)
+
+func _ready() -> void:
+	visible = false
+	scale = Vector3.ONE + thickness
+
+func set_highlighted(on: bool) -> void:
+	visible = on</code></pre>
+    </div>
+
+    <p>Толщина по осям задаётся отдельно: бумага плоская, поэтому по вертикали <code>y</code> корпус
+    надут сильнее — окантовка читается и когда смотришь на лист почти сбоку.</p>
+
+    <h2 id="hook">Связка с ховером</h2>
+    <p>В <code>paper.gd</code> добавлен метод <code>set_highlighted</code>, а в
+    <code>player_interactor.gd</code> подсветка переключается при смене цели:</p>
+
+    <div class="code">
+      <div class="code-head"><span class="dot"></span><span class="code-file">Scripts/Player/player_interactor.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+      <pre><code data-lang="gdscript">func _update_target() -> void:
+	var target := _find_target()
+	if target == current_target:
+		return
+	_set_target_highlight(current_target, false)
+	current_target = target
+	_set_target_highlight(current_target, true)
+	target_changed.emit(current_target)
+
+func _set_target_highlight(node: Node, on: bool) -> void:
+	if node != null and node.is_in_group("paper"):
+		var paper := node as Paper
+		if paper:
+			paper.set_highlighted(on)</code></pre>
+    </div>
+
+    <p>Старая бумага гасится, новая — зажигается. При подборе (<code>_on_paper_interacted</code>) подсветка
+    снимается сразу, чтобы окантовка не летела в руке. Пока бумага держится, её коллизия выключена,
+    рейкаст её не видит — подсветка и не появится.</p>
+
+    <div class="callout tip">
+      <div class="callout-title">Почему «поверх других объектов»</div>
+      <p>Полоса корпуса выступает за силуэт бумаги и лежит <b>перед</b> тем, что позади (пол, стол, другие
+      бумажки). Поэтому она видна поверх фона. А вот сквозь объект, который ближе к камере, она не
+      пробивается — и это правильно: такой объект был бы наведён рейкастом, а не бумага.</p>
+    </div>
+
+    <h2 id="demo">Интерактив: как это работает</h2>
+    <p>Это мини-рендер ровно той же идеи: коробка-бумага и надутый корпус. Покрути переключатели
+    и посмотри, что ломается, если выключить <code>cull_front</code> или depth-test.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>перевёрнутый корпус: cull_front + depth-test</span></div>
+      <div class="demo-body">
+        <canvas id="outline-canvas" data-h="380"></canvas>
+        <div class="demo-controls">
+          <button type="button" data-preset="good">Правильно</button>
+          <button type="button" data-preset="no-cull">Поломка: без cull_front</button>
+          <button type="button" data-preset="no-depth">Поломка: без depth-test</button>
+        </div>
+        <div class="demo-controls">
+          <label>Толщина окантовки <input type="range" id="th-slider" min="0" max="0.4" value="0.12" step="0.01"></label>
+          <label>Поворот <input type="range" id="az-slider" min="0" max="360" value="30" step="1"></label>
+          <label>Угол камеры <input type="range" id="el-slider" min="-10" max="75" value="22" step="1"></label>
+        </div>
+        <div class="demo-controls">
+          <label><input type="checkbox" id="cull-toggle" checked> cull_front</label>
+          <label><input type="checkbox" id="depth-toggle" checked> depth-test</label>
+          <label><input type="checkbox" id="hull-toggle"> показать корпус</label>
+          <label><input type="checkbox" id="wall-toggle"> препятствие спереди</label>
+        </div>
+        <div class="demo-readout" id="outline-readout"></div>
+      </div>
+    </div>
+
+    <h2 id="xray">А если хочется сквозь стены?</h2>
+    <p>Наш вариант — честный 3D: окантовка прячется за ближними объектами. Если захочется «рентген» —
+    чтобы окантовка светилась даже через стену — придётся выключить depth-test (<code>depth_test_disabled</code>)
+    и <code>discard</code>-ить фрагменты, которые глубже поверхности бумаги. Проще всего через отдельный
+    маленький <code>SubViewport</code>, куда рендерится только глубина бумаги. Это дороже по производительности
+    и нужно в этой игре едва ли: наведённая рейкастом бумага и так первый объект на луче.</p>
+
+    <h2 id="quiz">Проверь себя</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">1. Что делает <code>cull_front</code> в шейдере окантовки?</p>
+      <button class="opt" data-explain="cull_back рисует грани, смотрящие на камеру — нам нужно наоборот.">Рисует только передние грани корпуса</button>
+      <button class="opt" data-correct="true" data-explain="Корпус рисуется «с изнанки»: видны только грани, отвернутые от камеры, — те, что выпирают за силуэт бумаги.">Рисует только задние грани корпуса</button>
+      <button class="opt" data-explain="cull_front наоборот, включает рендер.">Выключает рендер корпуса</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">2. Зачем окантовке обычный depth-test?</p>
+      <button class="opt" data-correct="true" data-explain="Передняя поверхность бумаги ближе к камере, чем «задние» грани корпуса, и закрывает их — остаётся только кольцо по контуру.">Чтобы сама бумага закрывала центр корпуса</button>
+      <button class="opt" data-explain="Это противоположный режим (X-ray) — он сложнее и здесь не нужен.">Чтобы окантовка была видна сквозь стены</button>
+      <button class="opt" data-explain="За сглаживание отвечает другая механика.">Чтобы сгладить края окантовки</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">3. Почему окантовка видна «поверх других объектов»?</p>
+      <button class="opt" data-explain="Шейдер рисует 3D-меш, а не оверлей на весь экран.">Потому что шейдер рисует поверх всего экрана</button>
+      <button class="opt" data-correct="true" data-explain="Полоса корпуса выступает за силуэт бумаги и находится перед фоном — поэтому читается поверх пола, стола и стопки.">Полоса корпуса выступает за силуэт и лежит перед фоном</button>
+      <button class="opt" data-explain="Цвет тут ни при чём.">Потому что она белая</button>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="chapter-done">
+      <input type="checkbox" id="done-10">
+      <label for="done-10">Я разобрался с главой 10 — окантовка бумаги</label>
+    </div>
+
+    <div class="chapter-nav" data-auto-nav></div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="app.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("outline-canvas");
+  if (!canvas) return;
+  var readout = document.getElementById("outline-readout");
+
+  var azSlider = document.getElementById("az-slider");
+  var elSlider = document.getElementById("el-slider");
+  var thSlider = document.getElementById("th-slider");
+  var cullToggle = document.getElementById("cull-toggle");
+  var depthToggle = document.getElementById("depth-toggle");
+  var hullToggle = document.getElementById("hull-toggle");
+  var wallToggle = document.getElementById("wall-toggle");
+
+  var view = NP.fitCanvas(canvas);
+
+  // размеры бумаги в "мировых" пикселях демо
+  var SX = 190, SY = 34, SZ = 108;
+
+  function sub(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
+  function dot(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+  function cross(a, b) {
+    return { x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x };
+  }
+  function norm(v) { var l = Math.hypot(v.x, v.y, v.z) || 1; return { x: v.x / l, y: v.y / l, z: v.z / l }; }
+
+  function boxFaces(hx, hy, hz, cx, cy, cz) {
+    cx = cx || 0; cy = cy || 0; cz = cz || 0;
+    var cs = [
+      [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+      [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
+    ].map(function (s) {
+      return { x: cx + s[0] * hx, y: cy + s[1] * hy, z: cz + s[2] * hz };
+    });
+    var defs = [
+      { n: { x: 1, y: 0, z: 0 }, q: [1, 5, 6, 2] },
+      { n: { x: -1, y: 0, z: 0 }, q: [0, 3, 7, 4] },
+      { n: { x: 0, y: 1, z: 0 }, q: [2, 6, 7, 3] },
+      { n: { x: 0, y: -1, z: 0 }, q: [0, 4, 5, 1] },
+      { n: { x: 0, y: 0, z: 1 }, q: [4, 7, 6, 5] },
+      { n: { x: 0, y: 0, z: -1 }, q: [0, 1, 2, 3] }
+    ];
+    return defs.map(function (d) {
+      return { n: d.n, pts: d.q.map(function (k) { return cs[k]; }) };
+    });
+  }
+
+  function paint(ctx, proj, face, color, alpha, stroke, strokeAlpha) {
+    var pts = [];
+    for (var i = 0; i < face.pts.length; i++) {
+      var p = proj(face.pts[i]);
+      if (!p) return;
+      pts.push(p);
+    }
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.fill();
+    if (stroke) {
+      ctx.globalAlpha = strokeAlpha || 0.7;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // пресеты
+  Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (btn) {
+    btn.addEventListener("click", function () {
+      var p = btn.dataset.preset;
+      cullToggle.checked = p !== "no-cull";
+      depthToggle.checked = p !== "no-depth";
+    });
+  });
+
+  NP.loop(function () {
+    var ctx = view.ctx;
+    var cx = view.w / 2, cy = view.h / 2;
+    ctx.clearRect(0, 0, view.w, view.h);
+    ctx.fillStyle = "#080c11";
+    ctx.fillRect(0, 0, view.w, view.h);
+
+    var az = parseFloat(azSlider.value) * Math.PI / 180;
+    var el = parseFloat(elSlider.value) * Math.PI / 180;
+    var dist = 470;
+    var eye = {
+      x: dist * Math.cos(el) * Math.sin(az),
+      y: dist * Math.sin(el),
+      z: dist * Math.cos(el) * Math.cos(az)
+    };
+    var fw = norm(sub({ x: 0, y: 0, z: 0 }, eye));
+    var rt = norm(cross(fw, { x: 0, y: 1, z: 0 }));
+    var up = cross(rt, fw);
+    var focal = view.w * 0.5 / Math.tan(24 * Math.PI / 180);
+
+    function toCam(p) {
+      var d = sub(p, eye);
+      return { x: dot(d, rt), y: dot(d, up), z: dot(d, fw) };
+    }
+    function proj(p) {
+      var c = toCam(p);
+      if (c.z <= 0.2) return null;
+      var k = focal / c.z;
+      return { x: cx + c.x * k, y: cy - c.y * k, z: c.z };
+    }
+
+    // пол с сеткой
+    var GY = -130;
+    ctx.fillStyle = "rgba(40,60,90,0.14)";
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.strokeStyle = "rgba(90,120,160,0.22)";
+    ctx.lineWidth = 1;
+    for (var g = -320; g <= 320; g += 80) {
+      var p1 = proj({ x: g, y: GY, z: -320 });
+      var p2 = proj({ x: g, y: GY, z: 320 });
+      if (p1 && p2) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+      var q1 = proj({ x: -320, y: GY, z: g });
+      var q2 = proj({ x: 320, y: GY, z: g });
+      if (q1 && q2) { ctx.beginPath(); ctx.moveTo(q1.x, q1.y); ctx.lineTo(q2.x, q2.y); ctx.stroke(); }
+    }
+
+    var f = parseFloat(thSlider.value);
+    var paperFaces = boxFaces(SX / 2, SY / 2, SZ / 2);
+    var hullFaces = boxFaces(SX / 2 * (1 + f), SY / 2 * (1 + f), SZ / 2 * (1 + f));
+    var wallFaces = wallToggle.checked ? boxFaces(110, 110, 6, 20, 0, 46) : [];
+
+    function front(face) {
+      var c = { x: 0, y: 0, z: 0 };
+      for (var i = 0; i < face.pts.length; i++) {
+        c.x += face.pts[i].x; c.y += face.pts[i].y; c.z += face.pts[i].z;
+      }
+      c.x /= 4; c.y /= 4; c.z /= 4;
+      return dot(face.n, norm(sub(eye, c))) > 0;
+    }
+
+    // полупрозрачный корпус — показать геометрию
+    if (hullToggle.checked) {
+      hullFaces.forEach(function (fc) {
+        paint(ctx, proj, fc, "#ffffff", 0.12);
+      });
+    }
+
+    var draw = [];
+    paperFaces.forEach(function (fc) {
+      if (!front(fc)) return;
+      var color = fc.n.y > 0.5 ? "#cfc7b8" : (fc.n.y < -0.5 ? "#8f887c" : "#a89f8f");
+      draw.push({ kind: "paper", face: fc, color: color, alpha: 1, stroke: "#6f685d" });
+    });
+    hullFaces.forEach(function (fc) {
+      var fr = front(fc);
+      if (cullToggle.checked && fr) return;
+      draw.push({ kind: "hull", face: fc, color: "#ffffff", alpha: 0.95, stroke: null });
+    });
+    wallFaces.forEach(function (fc) {
+      if (!front(fc)) return;
+      draw.push({ kind: "wall", face: fc, color: "#ffa657", alpha: 0.45, stroke: "#c97a2e" });
+    });
+
+    draw.forEach(function (d) {
+      var c = { x: 0, y: 0, z: 0 };
+      d.face.pts.forEach(function (p) { c.x += p.x; c.y += p.y; c.z += p.z; });
+      d.depth = toCam({ x: c.x / 4, y: c.y / 4, z: c.z / 4 }).z;
+    });
+
+    if (depthToggle.checked) {
+      draw.sort(function (a, b) { return b.depth - a.depth; });
+    } else {
+      var order = { paper: 0, hull: 1, wall: 2 };
+      draw.sort(function (a, b) {
+        return (order[a.kind] - order[b.kind]) || (b.depth - a.depth);
+      });
+    }
+
+    draw.forEach(function (d) {
+      paint(ctx, proj, d.face, d.color, d.alpha, d.stroke, 0.7);
+    });
+
+    // подпись камеры
+    ctx.fillStyle = "rgba(147,161,177,0.8)";
+    ctx.font = "11px monospace";
+    ctx.fillText("камера смотрит на бумагу · толщина = " + (f * 100).toFixed(0) + "%", 10, view.h - 10);
+
+    var lines = [];
+    var c = cullToggle.checked, dpt = depthToggle.checked;
+    if (c && dpt) {
+      lines.push("cull_front: ВКЛ · depth-test: ВКЛ → белое кольцо вокруг силуэта, бумага не закрашена.");
+    } else if (!c && !dpt) {
+      lines.push("Оба выключены → корпус рисуется целиком и закрашивает бумагу.");
+    } else if (!c) {
+      lines.push("cull_front ВЫКЛ → передние грани корпуса превращают его в непрозрачный белый бокс.");
+    } else {
+      lines.push("depth-test ВЫКЛ → «задние» грани корпуса рисуются ПОВЕРХ бумаги (белое пятно).");
+    }
+    if (hullToggle.checked) lines.push("Полупрозрачная рамка — надутая копия коробки («корпус»).");
+    if (wallToggle.checked) lines.push("Препятствие спереди перекрывает окантовку — она видна поверх объектов ПОЗАДИ, но не сквозь ближние.");
+    readout.textContent = lines.join("\n");
+  });
+})();
+</script>
+</body>
+</html>

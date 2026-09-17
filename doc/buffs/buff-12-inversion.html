@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Инверсия — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Инверсия</h1>
+    <p class="lead">
+      Обе оси камеры инвертированы на весь раунд. Управление становится непривычным,
+      но преодолимым — нужно просто перевернуть мысль.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "inversion"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · не стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">↩️</div>
+      <div>
+        <h4>Сдвиг мыши × −1 по X и Y</h4>
+        <p>
+          Один булевый флаг <code>invert_look</code>. Пока он включён,
+          <code>camera_rotator</code> берёт движение мыши с обратным знаком.
+          Флаг уже не выключить — только новый раунд.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>обычный поворот</b>−motion.relative × sens</div>
+      <div class="chip green">С дебаффом<b>инвертированный</b>+motion.relative × sens</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("inversion")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>2. Флаг</b><code>invert_look = true</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Камера</b>Ротатор умножает движение мыши на −1.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Флаг и ветка</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — инверсия</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var invert_look : bool = false
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"inversion":
+			invert_look = true</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Player/camera_rotator.gd</span>
+        <h4>Знак движения мыши</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">camera_rotator.gd — ротация</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var _round : Node
+
+func _ready() -> void:
+	_round = get_tree().get_first_node_in_group("round_controller")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	if event is InputEventMouseMotion:
+		var motion := event as InputEventMouseMotion
+		var sign := -1.0 if _round.invert_look else 1.0
+		player.rotate_y(sign * -motion.relative.x * controller.mouse_sensitivity)
+		pitch = clampf(
+			pitch + sign * -motion.relative.y * controller.mouse_sensitivity,
+			deg_to_rad(controller.min_pitch),
+			deg_to_rad(controller.max_pitch)
+		)
+		rotation.x = pitch</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	invert_look = false
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: инвертированная мышь</h2>
+    <p>
+      Веди мышью по полю — точка движется за курсором. Включи инверсию: точка
+      начнёт убегать в противоположную сторону.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>мышь и камера</span></div>
+      <div class="demo-body">
+        <canvas id="inv-canvas" data-h="170"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать дебафф «Инверсия»</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Инверсию».</li>
+      <li>Поводи мышью — камера должна вращаться в обратную сторону.</li>
+      <li>Попробуй бросить бумажку — понадобится пара попыток, чтобы привыкнуть.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("inv-canvas");
+  var pick = document.getElementById("pick");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { inverted: false, mouse: { x: view.w / 2, y: view.h / 2 }, dot: { x: view.w / 2, y: view.h / 2 } };
+
+  canvas.addEventListener("mousemove", function (e) {
+    var r = canvas.getBoundingClientRect();
+    state.mouse.x = (e.clientX - r.left) * (view.w / r.width);
+    state.mouse.y = (e.clientY - r.top) * (view.h / r.height);
+  });
+
+  function draw(dt) {
+    var k = state.inverted ? -1 : 1;
+    state.dot.x += (state.mouse.x - state.dot.x) * k * 0.12 * (state.inverted ? 0.8 : 1);
+    state.dot.y += (state.mouse.y - state.dot.y) * k * 0.12 * (state.inverted ? 0.8 : 1);
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+    ctx.strokeStyle = "#26313d";
+    ctx.strokeRect(2, 2, view.w - 4, view.h - 4);
+
+    ctx.fillStyle = "#e3b341";
+    ctx.beginPath(); ctx.arc(state.mouse.x, state.mouse.y, 5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = state.inverted ? "#ff7b72" : "#7ee787";
+    ctx.beginPath(); ctx.arc(state.dot.x, state.dot.y, 10, 0, Math.PI * 2); ctx.fill();
+
+    BuffDemo.line(view, { x: 12, y: 20, text: state.inverted ? "инверсия: точка убегает от курсора" : "нормально: точка следует за курсором", color: state.inverted ? "#ff7b72" : "#93a1b1" });
+    BuffDemo.line(view, { x: 12, y: view.h - 12, text: "жёлтая — курсор, цветная — камера", color: "#93a1b1" });
+    if (readout) readout.textContent = state.inverted ? "инверсия ВКЛ" : "инверсия ВЫКЛ";
+  }
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

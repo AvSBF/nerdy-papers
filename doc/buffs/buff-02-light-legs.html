@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Лёгкие ноги — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Лёгкие ноги</h1>
+    <p class="lead">
+      Увеличивает скорость передвижения на 25% за каждый выбор. Носиться между
+      столами станет быстрее, но и прицельно бросать на скорости — сложнее.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "light_legs"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">⚡</div>
+      <div>
+        <h4>Скорость × (1 + 0.25 за выбор)</h4>
+        <p>
+          Множитель <code>speed_multiplier</code> живёт в <code>RoundController</code>
+          и прибавляется на 0.25 за каждый выбор. Скрипт движения умножает на него
+          базовую скорость игрока.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без баффа<b>×1.00</b>move_speed</div>
+      <div class="chip green">1-й выбор<b>×1.25</b>move_speed × 1.25</div>
+      <div class="chip green">2-й выбор<b>×1.50</b>move_speed × 1.50</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b>Карточка выбрана — <code>apply_buff("light_legs")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Множитель</b><code>speed_multiplier += 0.25</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Движение</b><code>player_movement</code> умножает <code>move_speed</code> на множитель.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>4. Бег</b>Игрок двигается быстрее. Выбор снова — ещё быстрее.</div>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        Аналог модификатора стата: <code>speed_multiplier</code> — как <code>float</code>
+        на <code>GameManager</code>, который применяется к <code>moveSpeed</code>
+        персонажа каждый кадр.
+      </p>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Множитель скорости + apply_buff()</h4>
+        <p>
+          Здесь же живёт и красный «Тяжёлые ноги» — тот же множитель, только вниз,
+          с потолком, чтобы скорость не уходила в ноль.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — скорость</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const SPEED_STEP : float = 0.25
+var speed_multiplier : float = 1.0
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"light_legs":
+			speed_multiplier += SPEED_STEP
+		"heavy_legs":
+			speed_multiplier = maxf(0.25, speed_multiplier - SPEED_STEP)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Player/player_movement.gd</span>
+        <h4>Применяем множитель</h4>
+        <p>
+          Одна строка: берём ссылку на раунд в <code>_ready()</code> и умножаем
+          базовую скорость.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">player_movement.gd — применение</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var _round : Node
+
+func _ready() -> void:
+	_round = get_tree().get_first_node_in_group("round_controller")
+	# ...
+
+func _physics_process(_delta: float) -> void:
+	# ...
+	var speed = controller.move_speed * _round.speed_multiplier
+	if Input.is_action_pressed("sprint"):
+		speed *= controller.sprint_multiplier</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	speed_multiplier = 1.0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: беги и выбирай бафф</h2>
+    <p>
+      Зажми кнопку мыши на поле — человечек побежит к урне. Выбирай «Лёгкие ноги»
+      и смотри, как растёт скорость.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>скорость бега</span></div>
+      <div class="demo-body">
+        <canvas id="run-canvas" data-h="160"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать бафф (+25%)</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Запусти <code>Scenes/World.tscn</code>, добудь карточки бросками.</li>
+      <li>Выбери «Лёгкие ноги» — игрок должен заметно ускориться.</li>
+      <li>Выбери ещё раз — скорость должна снова вырасти.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("run-canvas");
+  var pick = document.getElementById("pick");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { picks: 0, x: 40, moving: false };
+  var BASE = 95;
+
+  canvas.addEventListener("mousedown", function () { state.moving = true; });
+  window.addEventListener("mouseup", function () { state.moving = false; });
+  pick.addEventListener("click", function () { state.picks++; });
+  reset.addEventListener("click", function () { state.picks = 0; state.x = 40; });
+
+  function speed() { return BASE * (1 + state.picks * 0.25); }
+
+  function draw(dt) {
+    if (state.moving) state.x += speed() * dt;
+    if (state.x > view.w - 30) state.x = 40;
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+
+    ctx.strokeStyle = "#26313d";
+    ctx.beginPath(); ctx.moveTo(0, view.h - 30); ctx.lineTo(view.w, view.h - 30); ctx.stroke();
+
+    ctx.fillStyle = "#29924f";
+    ctx.fillRect(view.w - 64, view.h - 52, 24, 22);
+
+    ctx.fillStyle = "#e3b341";
+    ctx.beginPath(); ctx.arc(state.x, view.h - 42, 8, 0, Math.PI * 2); ctx.fill();
+
+    BuffDemo.line(view, { x: 20, y: 20, text: "зажми кнопку мыши, чтобы бежать", color: "#93a1b1" });
+    BuffDemo.line(view, {
+      x: 20, y: 40,
+      text: "скорость: ×" + (1 + state.picks * 0.25).toFixed(2) + " (" + Math.round(speed()) + " ед/с)",
+      color: state.picks > 0 ? "#7ee787" : "#93a1b1"
+    });
+    if (readout) readout.textContent = "выбрано баффов: " + state.picks;
+  }
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

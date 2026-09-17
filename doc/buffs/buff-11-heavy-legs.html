@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тяжёлые ноги — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Тяжёлые ноги</h1>
+    <p class="lead">
+      Скорость передвижения падает на 25% за каждый выбор. Ты всё ещё можешь
+      успеть, но бегать придётся меньше.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "heavy_legs"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">🪨</div>
+      <div>
+        <h4>Скорость × (1 − 0.25 за выбор), минимум ×0.25</h4>
+        <p>
+          Тот же <code>speed_multiplier</code>, что у «Лёгких ног», только вниз.
+          Потолок не даёт скорости уйти в ноль — ползать всё же можно.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>×1.00</b>move_speed</div>
+      <div class="chip green">1-й выбор<b>×0.75</b>move_speed × 0.75</div>
+      <div class="chip green">2-й выбор<b>×0.50</b>move_speed × 0.50</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("heavy_legs")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>2. Минус</b><code>speed_multiplier -= 0.25</code>, минимум 0.25.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Движение</b>Скрипт движения умножает <code>move_speed</code> на множитель.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Ветка в apply_buff()</h4>
+        <p>
+          Дебафф живёт рядом с «Лёгкими ногами» в одном <code>match</code> — тот же
+          множитель, тот же сброс.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — скорость</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const SPEED_STEP : float = 0.25
+const SPEED_FLOOR : float = 0.25
+var speed_multiplier : float = 1.0
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"light_legs":
+			speed_multiplier += SPEED_STEP
+		"heavy_legs":
+			speed_multiplier = maxf(SPEED_FLOOR, speed_multiplier - SPEED_STEP)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Player/player_movement.gd</span>
+        <h4>Применение множителя</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">player_movement.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var speed = controller.move_speed * _round.speed_multiplier
+if Input.is_action_pressed("sprint"):
+	speed *= controller.sprint_multiplier</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	speed_multiplier = 1.0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: беги с грузом</h2>
+    <p>Зажми кнопку мыши, чтобы бежать. Выбирай дебафф и смотри, как падает скорость.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>скорость бега</span></div>
+      <div class="demo-body">
+        <canvas id="run-canvas" data-h="160"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать дебафф (−25%)</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Тяжёлые ноги» — игрок должен замедлиться.</li>
+      <li>Выбери ещё раз — ещё медленнее, но не до нуля.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("run-canvas");
+  var pick = document.getElementById("pick");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { picks: 0, x: 40, moving: false };
+  var BASE = 95;
+
+  canvas.addEventListener("mousedown", function () { state.moving = true; });
+  window.addEventListener("mouseup", function () { state.moving = false; });
+  pick.addEventListener("click", function () { state.picks++; });
+  reset.addEventListener("click", function () { state.picks = 0; state.x = 40; });
+
+  function mult() { return Math.max(0.25, 1 - state.picks * 0.25); }
+  function speed() { return BASE * mult(); }
+
+  function draw(dt) {
+    if (state.moving) state.x += speed() * dt;
+    if (state.x > view.w - 30) state.x = 40;
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+    ctx.strokeStyle = "#26313d";
+    ctx.beginPath(); ctx.moveTo(0, view.h - 30); ctx.lineTo(view.w, view.h - 30); ctx.stroke();
+    ctx.fillStyle = "#a6302c";
+    ctx.fillRect(view.w - 64, view.h - 52, 24, 22);
+    ctx.fillStyle = "#e3b341";
+    ctx.beginPath(); ctx.arc(state.x, view.h - 42, 8, 0, Math.PI * 2); ctx.fill();
+    BuffDemo.line(view, { x: 20, y: 20, text: "зажми кнопку мыши, чтобы бежать", color: "#93a1b1" });
+    BuffDemo.line(view, { x: 20, y: 40, text: "скорость: ×" + mult().toFixed(2) + " (" + Math.round(speed()) + " ед/с)", color: state.picks > 0 ? "#ff7b72" : "#93a1b1" });
+    if (readout) readout.textContent = "выбрано дебаффов: " + state.picks;
+  }
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

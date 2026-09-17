@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Подсказчик — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Подсказчик</h1>
+    <p class="lead">
+      Когда в руке бумажка, урна с её типом подсвечивается. Не приходится бегать
+      и всматриваться в цифры на ящиках.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "hint"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">весь раунд · не стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">💡</div>
+      <div>
+        <h4>Подсветка правильной урны</h4>
+        <p>
+          Урны в группе <code>paper_storage</code> получают метод
+          <code>set_hint(enabled)</code>. Небольшой контроллер следит за сигналом
+          <code>held_paper_changed</code> и подсвечивает урны, чей тип совпадает
+          с типом бумажки в руке.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без баффа<b>тип на этикетке</b>читай сам</div>
+      <div class="chip green">С баффом<b>подсветка</b>цель видна сразу</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("hint")</code> — <code>hint_enabled = true</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Подбор</b>Игрок взял бумажку — сигнал <code>held_paper_changed</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>3. Подсветка</b>Урны с нужным типом включают индикатор.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>4. Бросок</b>Рука пуста — подсветка гаснет.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Paper Storage/paper_storage.gd</span>
+        <h4>Метод подсветки</h4>
+        <p>
+          Индикатором может быть светящийся материал или <code>Label3D</code>.
+          Метод просто вкл/выкл.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">paper_storage.gd — подсветка</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">@onready var hint_light : OmniLight3D = $HintLight
+
+func set_hint(enabled: bool) -> void:
+	hint_light.visible = enabled</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/UI/hint_controller.gd (новый)</span>
+        <h4>Контроллер подсказок</h4>
+        <p>
+          Слушает сигнал <code>held_paper_changed</code> интерактора. Тип бумажки
+          в руке определяет, какие урны подсвечивать.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">hint_controller.gd</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">extends Node
+
+var _round : Node
+var _storages : Array[Node] = []
+
+func _ready() -> void:
+	_round = get_tree().get_first_node_in_group("round_controller")
+	_storages = get_tree().get_nodes_in_group("paper_storage")
+	var player := get_tree().get_first_node_in_group("player")
+	player.interactor.held_paper_changed.connect(_on_held_changed)
+
+func _on_held_changed(paper: Node) -> void:
+	if not _round.hint_enabled:
+		return
+	var wanted := -1
+	if paper != null:
+		wanted = paper.paper_type
+	for storage in _storages:
+		storage.set_hint(storage.paper_type == wanted)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Включение и сброс</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — hint</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var hint_enabled : bool = false
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"hint":
+			hint_enabled = true
+
+func reset_round() -> void:
+	hint_enabled = false
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: найди цель</h2>
+    <p>
+      У тебя в руке бумажка типа 2. Найди нужную урну с подсказчиком и без.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>подсветка цели</span></div>
+      <div class="demo-body">
+        <canvas id="hint-canvas" data-h="170"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать бафф «Подсказчик»</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Подсказчик».</li>
+      <li>Возьми бумажку — правильная урна должна загореться.</li>
+      <li>Брось или выбрось бумажку — подсветка должна погаснуть.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("hint-canvas");
+  var pick = document.getElementById("pick");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { hint: false, paper: 2 };
+
+  function draw() {
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+    var n = 4;
+    var bw = 46, gap = 26;
+    var total = n * bw + (n - 1) * gap;
+    var x0 = view.w / 2 - total / 2;
+    var y = view.h / 2 - 20;
+    for (var i = 1; i <= n; i++) {
+      var x = x0 + (i - 1) * (bw + gap);
+      var correct = i === state.paper;
+      var glow = state.hint && correct;
+      ctx.fillStyle = glow ? "#1d4a2e" : "#161b22";
+      ctx.strokeStyle = glow ? "#7ee787" : (correct ? "#465060" : "#26313d");
+      ctx.lineWidth = glow ? 3 : 1;
+      ctx.fillRect(x, y, bw, 66);
+      ctx.strokeRect(x, y, bw, 66);
+      ctx.lineWidth = 1;
+      ctx.fillStyle = glow ? "#7ee787" : "#93a1b1";
+      ctx.font = "bold 14px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("Т" + i, x + bw / 2, y + 30);
+      ctx.fillStyle = "#93a1b1";
+      ctx.font = "10px system-ui";
+      ctx.fillText(correct ? "нужная" : "", x + bw / 2, y + 52);
+      ctx.textAlign = "left";
+    }
+    BuffDemo.line(view, { x: 20, y: 24, text: "в руке бумажка типа " + state.paper + (state.hint ? " · цель подсвечена" : " · найди цель сам"), color: state.hint ? "#7ee787" : "#93a1b1" });
+    if (readout) readout.textContent = state.hint ? "подсказка включена" : "подсказка выключена";
+  }
+
+  pick.addEventListener("click", function () { state.hint = true; draw(); });
+  reset.addEventListener("click", function () { state.hint = false; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мощный бросок — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Мощный бросок</h1>
+    <p class="lead">
+      Бумага вылетает из руки быстрее. Дальние урны станут достижимы, но короткие
+      броски потребуют прицеливания поаккуратнее.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "power_throw"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">💨</div>
+      <div>
+        <h4>throw_speed +1 за выбор</h4>
+        <p>
+          Скорость, с которой бумага улетает из руки, хранится в
+          <code>player_interactor</code>. Бафф увеличивает её: 5 → 6 → 7.
+          Базовые 5 остаются точкой отсчёта.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без баффа<b>5 ед/с</b>throw_speed</div>
+      <div class="chip green">1-й выбор<b>6 ед/с</b>+1</div>
+      <div class="chip green">2-й выбор<b>7 ед/с</b>+1</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("power_throw")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Скорость</b><code>throw_speed += 1</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>3. Бросок</b><code>paper.drop(-forward * throw_speed)</code> — летит дальше.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Скорость броска</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — бросок</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const THROW_STEP : float = 1.0
+const THROW_MIN : float = 2.0
+var throw_speed : float = 5.0
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"power_throw":
+			throw_speed += THROW_STEP
+		"weak_throw":
+			throw_speed = maxf(THROW_MIN, throw_speed - THROW_STEP)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Player/player_interactor.gd</span>
+        <h4>Используем скорость из раунда</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">player_interactor.gd — бросок</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func _throw_top_paper() -> void:
+	# ...
+	if is_instance_valid(paper):
+		paper.drop(-camera.global_transform.basis.z * _round.throw_speed)
+	# ...</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	throw_speed = 5.0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: дальность броска</h2>
+    <p>
+      Жми «Бросить» — бумажка улетит тем дальше, чем выше скорость броска.
+      Урна стоит на 6 метрах.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>дальность полёта</span></div>
+      <div class="demo-body">
+        <canvas id="throw-canvas" data-h="170"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать бафф (+1)</button>
+          <button type="button" id="go">Бросить</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Мощный бросок».</li>
+      <li>Кинь бумажку в дальнюю урну — теперь она долетает.</li>
+      <li>Убедись, что короткие броски требуют прицела пониже.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("throw-canvas");
+  var pick = document.getElementById("pick");
+  var go = document.getElementById("go");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { speed: 5.0, t: 0, flying: false };
+
+  function fly() {
+    state.t = 0;
+    state.flying = true;
+  }
+
+  pick.addEventListener("click", function () { state.speed += 1; });
+  go.addEventListener("click", fly);
+  reset.addEventListener("click", function () { state.speed = 5.0; state.t = 0; state.flying = false; });
+
+  function draw(dt) {
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+    var ground = view.h - 30;
+    var scale = 30; // пикселей на метр
+    var urnX = 20 + 6 * scale;
+
+    ctx.strokeStyle = "#26313d";
+    ctx.beginPath(); ctx.moveTo(0, ground); ctx.lineTo(view.w, ground); ctx.stroke();
+
+    ctx.fillStyle = "#29924f";
+    ctx.fillRect(urnX - 12, ground - 30, 24, 30);
+    ctx.fillStyle = "#93a1b1";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("урна (6 м)", urnX, ground - 38);
+    ctx.textAlign = "left";
+
+    var dist = state.speed * 0.9;
+    var maxX = 20 + dist * scale;
+
+    ctx.strokeStyle = "#465060";
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(20, ground); ctx.lineTo(Math.min(view.w - 10, maxX), ground); ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (state.flying) {
+      state.t += dt * 2.2;
+      var x = 20 + (maxX - 20) * Math.min(1, state.t);
+      var y = ground - 8 - Math.sin(Math.min(1, state.t) * Math.PI) * 40;
+      ctx.fillStyle = "#e3b341";
+      ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill();
+      if (state.t >= 1) state.flying = false;
+    } else {
+      ctx.fillStyle = "#e3b341";
+      ctx.beginPath(); ctx.arc(20, ground - 10, 6, 0, Math.PI * 2); ctx.fill();
+    }
+
+    var hit = 20 + dist * scale >= urnX - 12;
+    BuffDemo.line(view, { x: 20, y: 24, text: "скорость броска: " + state.speed + " ед/с · долетит: " + (hit ? "да ✓" : "нет ✗"), color: hit ? "#7ee787" : "#ff7b72" });
+    if (readout) readout.textContent = "throw_speed: " + state.speed;
+  }
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

@@ -3,6 +3,10 @@
    Подключается вместе с ../style.css (базовые стили курса).
    ============================================================ */
 
+/* ---------- Сайдбар: только оглавление страницы ---------- */
+
+.side-progress { display: none; }
+
 /* ---------- Эффект баффа ---------- */
 
 .effect-card {
@@ -25,6 +29,8 @@
   background: rgba(126, 231, 135, 0.12);
   border: 1px solid rgba(126, 231, 135, 0.35);
 }
+.effect-card.red { border-left-color: var(--red); }
+.effect-card.red .icon { background: rgba(255, 123, 114, 0.12); border-color: rgba(255, 123, 114, 0.35); }
 .effect-card h4 { margin: 0 0 4px; font-size: 1rem; }
 .effect-card p { margin: 0; color: var(--muted); font-size: 14px; }
 
@@ -62,6 +68,7 @@
 }
 .buff-tags .tag.id { color: var(--accent-2); border-color: rgba(108, 196, 242, 0.4); }
 .buff-tags .tag.green { color: var(--green); border-color: rgba(126, 231, 135, 0.4); }
+.buff-tags .tag.red { color: var(--red); border-color: rgba(255, 123, 114, 0.4); }
 .buff-tags .tag.duration { color: var(--yellow); border-color: rgba(227, 179, 65, 0.4); }
 
 /* ---------- Схема работы (flow) ---------- */
@@ -135,3 +142,17 @@
   margin-right: 6px;
   vertical-align: 2px;
 }
+
+/* ---------- Хаб-страница каталога ---------- */
+
+.buff-card h4 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.status {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.status.done { color: var(--green); border-color: rgba(126, 231, 135, 0.4); }
+.status.plan { color: var(--yellow); border-color: rgba(227, 179, 65, 0.4); }

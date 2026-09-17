@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Магнит — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Магнит</h1>
+    <p class="lead">
+      Бумажка в полёте слегка притягивается к ближайшей урне с её типом. Не решает
+      за тебя, но прощает неточные броски — особенно полезно с дальней дистанции.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "magnet"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">🧲</div>
+      <div>
+        <h4>Пружина к правильной урне</h4>
+        <p>
+          Пока бумага летит свободно, она испытывает пружинную силу к ближайшей
+          урне с подходящим типом: <code>F = k·Δ − c·v</code>. Сила
+          <code>magnet_strength</code> растёт с каждым выбором, но радиус действия
+          ограничен — с другой стороны комнаты не затянет.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без баффа<b>полёт прямой</b>физика не трогается</div>
+      <div class="chip green">С баффом<b>сила пружины</b>F = k·Δ − c·v</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("magnet")</code> — сила растёт.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Бросок</b>Бумага в свободном полёте (не в руке).</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>3. Пружина</b>Нашлась правильная урна в радиусе — сила тянет бумагу к ней.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>4. Попадание</b>Бумага засчитана, цикл повторяется.</div>
+    </div>
+
+    <div class="callout unity">
+      <div class="callout-title">Из Unity</div>
+      <p>
+        Аналог <code>AddForce</code> в <code>FixedUpdate</code> к ближайшему объекту.
+        Пружина в Godot делается в <code>_integrate_forces</code> — это прямой доступ
+        к шагу физики RigidBody, как <code>Rigidbody.AddForce</code> в Unity.
+      </p>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сила магнита</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — сила магнита</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const MAGNET_RADIUS : float = 8.0
+var magnet_strength : float = 0.0
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"magnet":
+			magnet_strength += 2.0</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Paper/paper.gd</span>
+        <h4>Пружина в _integrate_forces</h4>
+        <p>
+          Сила прикладывается только в свободном полёте — когда бумага не летит в руку
+          и не удерживается. Демпфирование гасит раскачку, чтобы бумага не «звенела».
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">paper.gd — магнит</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	if global_position.y < KILL_Y:
+		queue_free()
+		return
+	if _flight_target != null:
+		# полёт в руку (как сейчас)
+		return
+	elif _held and _hold_point != null:
+		# удержание (как сейчас)
+		return
+	_apply_magnet(state)   # свободный полёт
+
+func _apply_magnet(state: PhysicsDirectBodyState3D) -> void:
+	var round := get_tree().get_first_node_in_group("round_controller")
+	if round == null or round.magnet_strength <= 0.0:
+		return
+	var target := _nearest_correct_storage()
+	if target == null:
+		return
+	var offset := target.global_position - global_position
+	if offset.length() > MAGNET_RADIUS:
+		return
+	var spring := offset.normalized() * round.magnet_strength
+	var damping := -linear_velocity * 0.6
+	state.apply_central_force(spring + damping)
+
+func _nearest_correct_storage() -> Node3D:
+	var best : Node3D = null
+	var best_dist := INF
+	for storage in get_tree().get_nodes_in_group("paper_storage"):
+		if storage.paper_type != paper_type:
+			continue
+		var d := global_position.distance_to(storage.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = storage
+	return best</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	magnet_strength = 0.0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: траектория с магнитом</h2>
+    <p>
+      Бумажка летит справа налево к урне. Включи магнит — траектория загнётся
+      к цели.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>пружина к урне</span></div>
+      <div class="demo-body">
+        <canvas id="mag-canvas" data-h="180"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать бафф «Магнит»</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Магнит» после появления карточек.</li>
+      <li>Кинь бумажку мимо урны, но не слишком далеко — она должна довернуться к правильной урне.</li>
+      <li>Кинь сильно в сторону — далёкий бросок магнит не спасёт (радиус ограничен).</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("mag-canvas");
+  var pick = document.getElementById("pick");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { strength: 0, t: 0 };
+
+  function launch() { state.t = 0; }
+  pick.addEventListener("click", function () { state.strength += 2; launch(); });
+  reset.addEventListener("click", function () { state.strength = 0; state.t = 0; });
+  launch();
+
+  function draw(dt) {
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+
+    var startX = 40, startY = view.h - 40;
+    var urnX = view.w - 60, urnY = 40;
+    var total = 2.6;
+    state.t = Math.min(total, state.t + dt);
+    var p = state.t / total;
+
+    ctx.strokeStyle = "#26313d";
+    ctx.beginPath(); ctx.moveTo(0, startY); ctx.lineTo(view.w, startY); ctx.stroke();
+
+    // траектория
+    ctx.strokeStyle = state.strength > 0 ? "#29924f" : "#478cbf";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    var prev = null;
+    for (var i = 0; i <= 40; i++) {
+      var tp = i / 40;
+      var x = startX + (urnX - startX) * tp;
+      var y = startY + (urnY - startY) * tp;
+      if (state.strength > 0 && tp > 0.35) {
+        y += Math.sin((tp - 0.35) * Math.PI) * (state.strength * 14);
+      }
+      if (prev) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      prev = { x: x, y: y };
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1;
+
+    // урна
+    ctx.fillStyle = "#29924f";
+    ctx.fillRect(urnX - 14, urnY - 8, 28, 26);
+    ctx.fillStyle = "#e6edf3";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("урна", urnX, urnY + 36);
+    ctx.textAlign = "left";
+
+    // бумажка
+    var bx = startX + (urnX - startX) * p;
+    var by = startY + (urnY - startY) * p;
+    if (state.strength > 0 && p > 0.35) {
+      by += Math.sin((p - 0.35) * Math.PI) * (state.strength * 14);
+    }
+    ctx.fillStyle = "#e3b341";
+    ctx.beginPath(); ctx.arc(bx, by, 6, 0, Math.PI * 2); ctx.fill();
+
+    if (p >= 1) {
+      BuffDemo.line(view, { x: 20, y: 20, text: state.strength > 0 ? "ПОПАЛО ✓" : "мимо ✗", color: state.strength > 0 ? "#7ee787" : "#ff7b72", font: "bold 14px system-ui" });
+    } else {
+      BuffDemo.line(view, { x: 20, y: 20, text: state.strength > 0 ? "магнит тянет к урне" : "без магнита — прямой полёт", color: "#93a1b1" });
+    }
+    if (readout) readout.textContent = "сила магнита: " + state.strength;
+  }
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Автоматизация — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Автоматизация</h1>
+    <p class="lead">
+      Кнопка стола-раздатчика возвращается быстрее. Меньше простаиваешь — больше
+      бумажек в минуту.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "automation"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">⚙️</div>
+      <div>
+        <h4>Кулдаун кнопки ×0.7 за выбор</h4>
+        <p>
+          После нажатия кнопка ждёт <code>wait_time</code> (0.3 c) и поднимается.
+          Бафф уменьшает это время множителем: 0.3 → 0.21 → 0.15 (потолок).
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без баффа<b>0.30 c</b>wait_time</div>
+      <div class="chip green">1-й выбор<b>0.21 c</b>×0.7</div>
+      <div class="chip green">2-й выбор<b>0.15 c</b>×0.7 (потолок)</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("automation")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2. Множитель</b><code>button_cooldown_multiplier *= 0.7</code>, минимум 0.5.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>3. Кнопка</b>Раздатчик ждёт <code>wait_time × множитель</code>.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Множитель кулдауна</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — кулдаун</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const COOLDOWN_FLOOR : float = 0.5
+var button_cooldown_multiplier : float = 1.0
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"automation":
+			button_cooldown_multiplier = maxf(
+				COOLDOWN_FLOOR,
+				button_cooldown_multiplier * 0.7
+			)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Paper Creating Table/table_button_press.gd</span>
+        <h4>Ждём меньше</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">table_button_press.gd — таймер</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">var _round : Node
+
+func _ready() -> void:
+	_round = get_tree().get_first_node_in_group("round_controller")
+
+func interact():
+	if _is_pressed:
+		return
+	_is_pressed = true
+	moving_part.position.y = minimum_position
+	creator.spawn_paper()
+	var cooldown := wait_time * _round.button_cooldown_multiplier
+	await get_tree().create_timer(cooldown).timeout
+	moving_part.position.y = initial_position
+	_is_pressed = false</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	button_cooldown_multiplier = 1.0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: кнопка-раздатчик</h2>
+    <p>
+      Нажми «Нажать кнопку» — бумажка появится после кулдауна. Чем больше баффов,
+      тем быстрее кнопка готова.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>кулдаун кнопки</span></div>
+      <div class="demo-body">
+        <canvas id="auto-canvas" data-h="150"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать бафф «Автоматизация»</button>
+          <button type="button" id="press">Нажать кнопку</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Автоматизацию».</li>
+      <li>Нажми кнопку стола — плашка должна вернуться заметно быстрее.</li>
+      <li>Выбери ещё раз — разница станет меньше (потолок).</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("auto-canvas");
+  var pick = document.getElementById("pick");
+  var press = document.getElementById("press");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var BASE = 0.3;
+  var state = { mult: 1.0, progress: 0, running: false };
+
+  function draw(dt) {
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+    if (state.running) {
+      state.progress += dt;
+      if (state.progress >= BASE * state.mult) state.running = false;
+    }
+    var cd = BASE * state.mult;
+    var t = state.running ? state.progress : cd;
+    BuffDemo.progress(view, {
+      value: t, max: cd, y: 50,
+      label: state.running ? "готовится: " + t.toFixed(2) + " c" : "кнопка готова",
+      color: state.running ? "#e3b341" : "#29924f"
+    });
+    if (!state.running) {
+      ctx.fillStyle = "#7ee787";
+      ctx.font = "12px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("жми «Нажать кнопку»", view.w / 2, 40);
+      ctx.textAlign = "left";
+    }
+    if (readout) readout.textContent = "кулдаун: " + cd.toFixed(2) + " c";
+  }
+
+  pick.addEventListener("click", function () { state.mult = Math.max(0.5, state.mult * 0.7); });
+  press.addEventListener("click", function () { if (!state.running) { state.running = true; state.progress = 0; } });
+  reset.addEventListener("click", function () { state = { mult: 1.0, progress: 0, running: false }; });
+  NP.loop(draw);
+})();
+</script>
+</body>
+</html>

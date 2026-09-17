@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Комбо — бафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">БАФФ · ЗЕЛЁНАЯ КАРТОЧКА</div>
+    <h1>Комбо</h1>
+    <p class="lead">
+      Точная серия награждается: с третьей подряд правильно засчитанной бумажки
+      каждая следующая приносит дополнительное очко. Промах — серия обнуляется.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "combo"</span>
+      <span class="tag green">бафф · зелёная</span>
+      <span class="tag duration">весь раунд · не стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card">
+      <div class="icon">🔥</div>
+      <div>
+        <h4>Серия из 3+ точных → +1 очко за бумажку</h4>
+        <p>
+          В <code>RoundController</code> копится <code>combo_streak</code>. Когда
+          серия достигает 3, каждая следующая правильная бумажка добавляет
+          <code>points_per_paper + 1</code>. Промах (чужая бумажка в урне)
+          сбрасывает серию.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Серия 1–2<b>обычные очки</b>points_per_paper</div>
+      <div class="chip green">Серия 3+<b>+1 очко</b>points_per_paper + 1</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Закид</b>Ящик шлёт <code>paper_deposited</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>2. Серия</b><code>combo_streak += 1</code>. Дошла до 3 — включился бонус.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Промах</b>Чужая бумажка → <code>wrong_paper</code> → серия в 0.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Paper Storage/paper_storage.gd</span>
+        <h4>Сигнал о промахе</h4>
+        <p>
+          Сейчас ящик при чужой бумажке молча кидает её обратно. Добавляем сигнал,
+          чтобы раунд знал о промахе.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">paper_storage.gd — сигнал промаха</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">signal paper_deposited(count: int)
+signal wrong_paper
+
+func _on_body_entered(body: Node3D) -> void:
+	if not body.is_in_group("paper"):
+		return
+	if _is_same_paper_type(body):
+		# ... засчитываем
+	else:
+		_throw_toward_player(body)
+		wrong_paper.emit()   # промах</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Серия и бонус</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — комбо</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const COMBO_THRESHOLD : int = 3
+var combo_enabled : bool = false
+var combo_streak : int = 0
+
+func _ready() -> void:
+	# ...
+	for storage in get_tree().get_nodes_in_group("paper_storage"):
+		storage.paper_deposited.connect(_on_paper_deposited)
+		storage.wrong_paper.connect(_on_wrong_paper)
+
+func _on_paper_deposited(_count: int) -> void:
+	combo_streak += 1
+	var bonus := 0
+	if combo_enabled and combo_streak >= COMBO_THRESHOLD:
+		bonus = 1
+	total_deposited += points_per_paper + bonus
+	deposits_changed.emit(total_deposited, buff_threshold)
+	# ...
+
+func _on_wrong_paper() -> void:
+	combo_streak = 0</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Ветка в apply_buff + сброс</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — включение</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"combo":
+			combo_enabled = true
+
+func reset_round() -> void:
+	combo_enabled = false
+	combo_streak = 0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: держи серию</h2>
+    <p>
+      Кидай правильно и не мажь. С 3-й бумажки подряд очки идут с бонусом.
+    </p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>серия и бонус</span></div>
+      <div class="demo-body">
+        <canvas id="combo-canvas" data-h="150"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать бафф «Комбо»</button>
+          <button type="button" id="ok">Закинуть правильно</button>
+          <button type="button" id="miss">Бросить мимо</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Комбо».</li>
+      <li>Кинь 2 бумажки в правильные урны — очки обычные.</li>
+      <li>С 3-й бумажки прогресс квоты должен прыгать на 1 больше.</li>
+      <li>Кинь бумажку в чужую урну — бонус должен пропасть до следующей серии из 3.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("combo-canvas");
+  var pick = document.getElementById("pick");
+  var ok = document.getElementById("ok");
+  var miss = document.getElementById("miss");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { enabled: false, streak: 0, points: 0 };
+
+  function draw() {
+    BuffDemo.clear(view);
+    var bonus = state.enabled && state.streak >= 3;
+    var labels = [];
+    for (var i = 1; i <= 3; i++) {
+      labels.push(i <= state.streak ? "✓" : "·");
+    }
+    BuffDemo.line(view, {
+      x: 20, y: 30,
+      text: "серия: " + labels.join(" ") + "  (" + state.streak + ")",
+      color: bonus ? "#7ee787" : "#93a1b1",
+      font: "14px monospace"
+    });
+    BuffDemo.line(view, {
+      x: 20, y: 56,
+      text: state.enabled ? "бонус за бумажку: " + (bonus ? "+1" : "+0") : "комбо не выбрано",
+      color: bonus ? "#7ee787" : (state.enabled ? "#e3b341" : "#93a1b1")
+    });
+    BuffDemo.progress(view, { value: state.points, max: 30, y: 90, label: "очки квоты: " + state.points, color: bonus ? "#29924f" : "#478cbf" });
+    if (readout) readout.textContent = "серия: " + state.streak + ", очки: " + state.points;
+  }
+
+  pick.addEventListener("click", function () { state.enabled = true; draw(); });
+  ok.addEventListener("click", function () {
+    if (!state.enabled) { state.points += 1; state.streak = 0; draw(); return; }
+    state.streak++;
+    state.points += 1 + (state.streak >= 3 ? 1 : 0);
+    draw();
+  });
+  miss.addEventListener("click", function () { state.streak = 0; draw(); });
+  reset.addEventListener("click", function () { state = { enabled: false, streak: 0, points: 0 }; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Скупые очки — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Скупые очки</h1>
+    <p class="lead">
+      Бумажка приносит на 1 очко меньше. Зеркало «Бонусных очков» — и его
+      нельзя уронить ниже 1.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "stingy_points"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">🪙</div>
+      <div>
+        <h4>points_per_paper − 1, минимум 1</h4>
+        <p>
+          Та же переменная <code>points_per_paper</code>, что у «Бонусных очков».
+          Дебафф отнимает по 1 очку за выбор, но не ниже 1 — иначе квота станет
+          невыполнимой.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>1 очко / закид</b>points_per_paper = 1</div>
+      <div class="chip green">С дебаффом<b>1 очко / закид</b>ниже не падает</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("stingy_points")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>2. Минус</b><code>points_per_paper = maxi(1, points_per_paper − 1)</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Очки</b>Каждый закид приносит меньше.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Ветка в apply_buff()</h4>
+        <p>
+          Дебафф полезен только если «Бонусные очки» уже выбраны: 2 → 1. Если
+          значение и так 1, выбор ничего не меняет.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — скупые очки</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"extra_points":
+			points_per_paper += 1
+		"stingy_points":
+			points_per_paper = maxi(1, points_per_paper - 1)</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: очки тают</h2>
+    <p>Подними очки «Бонусными очками», потом режь их «Скупыми» — но не ниже 1.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>очки за закид</span></div>
+      <div class="demo-body">
+        <canvas id="pts-canvas" data-h="150"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="up">Выбрать «Бонусные очки»</button>
+          <button type="button" id="down">Выбрать «Скупые очки»</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Скупые очки» без «Бонусных» — очки за закид должны остаться 1.</li>
+      <li>Выбери «Бонусные очки» до 3, затем «Скупые» дважды — должно стать 1, не 0.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("pts-canvas");
+  var up = document.getElementById("up");
+  var down = document.getElementById("down");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { pp: 1 };
+
+  function draw() {
+    BuffDemo.clear(view);
+    BuffDemo.progress(view, {
+      value: state.pp, max: 5, y: 60,
+      label: "очков за закид: " + state.pp,
+      color: state.pp > 1 ? "#29924f" : "#a6302c"
+    });
+    BuffDemo.line(view, { x: 20, y: 30, text: state.pp === 1 ? "минимум достигнут — ниже не упадёт" : "можно ещё порезать", color: state.pp === 1 ? "#e3b341" : "#93a1b1" });
+    if (readout) readout.textContent = "points_per_paper: " + state.pp;
+  }
+
+  up.addEventListener("click", function () { state.pp = Math.min(5, state.pp + 1); draw(); });
+  down.addEventListener("click", function () { state.pp = Math.max(1, state.pp - 1); draw(); });
+  reset.addEventListener("click", function () { state = { pp: 1 }; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>

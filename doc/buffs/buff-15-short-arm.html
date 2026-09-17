@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Короткая рука — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#scheme">Схема работы</a>
+      <a href="#plan">План внедрения</a>
+      <a href="#demo">Интерактив</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Короткая рука</h1>
+    <p class="lead">
+      Дальность взаимодействия падает. Подходить к бумажкам и кнопкам придётся
+      вплотную.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "short_arm"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">✊</div>
+      <div>
+        <h4>interaction_distance − 0.5, минимум 1.0 м</h4>
+        <p>
+          Зеркало «Длинной руки»: 3.0 → 2.5 → 2.0. Пол подбирать с пола и кнопки
+          нажимать придётся с близкого расстояния.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>3.0 м</b>interaction_distance</div>
+      <div class="chip green">1-й выбор<b>2.5 м</b>−0.5</div>
+      <div class="chip green">2-й выбор<b>2.0 м</b>−0.5</div>
+    </div>
+
+    <h2 id="scheme">Схема работы</h2>
+    <div class="flow">
+      <div class="step"><b>1. Выбор</b><code>apply_buff("short_arm")</code>.</div>
+      <div class="arrow">→</div>
+      <div class="step active"><b>2. Минус</b><code>interaction_distance −= 0.5</code>, минимум 1.0.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3. Рейкаст</b>Цель ищется на новой дистанции.</div>
+    </div>
+
+    <h2 id="plan">План внедрения</h2>
+    <ol class="plan">
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Ветка в apply_buff()</h4>
+        <p>
+          Живёт в том же блоке, что «Длинная рука». Нижняя граница не даёт
+          «обнять» бумажку невозможно близко.
+        </p>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — дальность</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">const ARM_STEP : float = 0.5
+const ARM_MIN : float = 1.0
+var interaction_distance : float = 3.0
+
+func apply_buff(buff_id: String) -> void:
+	match buff_id:
+		"long_arm":
+			interaction_distance += ARM_STEP
+		"short_arm":
+			interaction_distance = maxf(ARM_MIN, interaction_distance - ARM_STEP)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Player/player_interactor.gd</span>
+        <h4>Читаем из раунда</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">player_interactor.gd — рейкаст</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func _find_target() -> Node:
+	return InteractionRaycast.get_node_in_front(
+		camera,
+		_round.interaction_distance,
+		func(node : Node) -> bool:
+			for group in GROUPS:
+				if node.is_in_group(group):
+					return true
+			return false,
+		interaction_mask
+	)</code></pre>
+        </div>
+      </li>
+
+      <li>
+        <span class="file-tag">Scripts/Round/round_controller.gd</span>
+        <h4>Сброс в новом раунде</h4>
+        <div class="code">
+          <div class="code-head"><span class="dot"></span><span class="code-file">round_controller.gd — reset_round()</span><button class="copy-btn" type="button">Копировать</button></div>
+          <pre><code data-lang="gdscript">func reset_round() -> void:
+	interaction_distance = 3.0
+	# ...</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <h2 id="demo">Интерактив: рука короче</h2>
+    <p>Смотри, как сжимается луч. Цель на 2.75 м — она станет недостижима быстро.</p>
+
+    <div class="demo">
+      <div class="demo-head"><span class="pill">интерактив</span><span>луч взаимодействия</span></div>
+      <div class="demo-body">
+        <canvas id="arm-canvas" data-h="170"></canvas>
+        <div class="demo-controls">
+          <button type="button" id="pick">Выбрать дебафф (−0.5 м)</button>
+          <button type="button" id="reset">Сброс</button>
+          <span id="readout"></span>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Короткую руку».</li>
+      <li>Попробуй подобрать бумажку с привычного расстояния — подсказка должна появляться позже.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+<script src="buff-demo.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById("arm-canvas");
+  var pick = document.getElementById("pick");
+  var reset = document.getElementById("reset");
+  var readout = document.getElementById("readout");
+  if (!canvas) return;
+  var view = NP.fitCanvas(canvas);
+  var state = { reach: 3.0 };
+
+  function draw() {
+    var ctx = view.ctx;
+    BuffDemo.clear(view);
+    var x0 = 40, y = view.h / 2;
+    var scale = view.w / 6.5;
+    var reach = state.reach * scale;
+    var targetX = x0 + 2.75 * scale;
+    var inReach = 2.75 <= state.reach;
+
+    ctx.strokeStyle = "#26313d";
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(view.w, y); ctx.stroke();
+
+    ctx.fillStyle = inReach ? "#29924f" : "#5c2320";
+    ctx.fillRect(targetX - 12, y - 30, 24, 36);
+    ctx.fillStyle = "#93a1b1";
+    ctx.font = "11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("цель", targetX, y - 38);
+    ctx.textAlign = "left";
+
+    ctx.strokeStyle = inReach ? "#7ee787" : "#ff7b72";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + reach, y); ctx.stroke();
+    ctx.lineWidth = 1;
+
+    ctx.fillStyle = "#e3b341";
+    ctx.beginPath(); ctx.arc(x0, y, 7, 0, Math.PI * 2); ctx.fill();
+
+    BuffDemo.line(view, { x: 20, y: 24, text: "дальность: " + state.reach.toFixed(1) + " м", color: inReach ? "#7ee787" : "#ff7b72" });
+    BuffDemo.line(view, { x: 20, y: 42, text: inReach ? "цель в зоне" : "цель вне зоны — не дотянуться", color: "#93a1b1" });
+    if (readout) readout.textContent = "дальность: " + state.reach.toFixed(1) + " м";
+  }
+
+  pick.addEventListener("click", function () { state.reach = Math.max(1.0, state.reach - 0.5); draw(); });
+  reset.addEventListener("click", function () { state.reach = 3.0; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>
