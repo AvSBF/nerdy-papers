@@ -8,14 +8,36 @@ signal picked_up(paper: Paper)
 const KILL_Y : float = -0.5
 const MAGNET_RADIUS : float = 8.0
 const MAGNET_AIM_HEIGHT : float = 1.1
+const MAGNET_RAMP_TIME : float = 1.5
+const MAGNET_K : float = 0.5
+const MAGNET_DAMPING : float = 2.0
+const FACE_PLAYER_BASIS := Basis(Vector3(1.0, 0.0, 0.0), PI / 2.0)
+
+const TYPE_COLORS : Array[Color] = [
+	Color(0.20, 0.45, 0.90),
+	Color(0.25, 0.75, 0.35),
+	Color(0.95, 0.40, 0.70),
+	Color(0.85, 0.25, 0.25),
+]
 
 @onready var type_label : Label3D = $TypeLabel
 @onready var outline : PaperOutline = $Outline
+@onready var color_square : MeshInstance3D = $ColorSquare
 
 func _ready() -> void:
 	type_label.text = str(paper_type)
 	type_label.visible = false
 	continuous_cd = true
+	_apply_type_color()
+
+func _apply_type_color() -> void:
+	var mat := StandardMaterial3D.new()
+	var color := TYPE_COLORS[clampi(paper_type - 1, 0, TYPE_COLORS.size() - 1)]
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 0.8
+	color_square.material_override = mat
 
 func set_highlighted(on: bool) -> void:
 	outline.set_highlighted(on)
@@ -28,13 +50,13 @@ var _flight_progress : float = 0.0
 var _flight_time : float = 0.0
 var _held : bool = false
 var _is_player_thrown : bool = false
+var _free_flight_time : float = 0.0
 var hold_offset : Vector3 = Vector3.ZERO
 var show_label_while_held : bool = true
 
 func set_show_label_while_held(value: bool) -> void:
 	show_label_while_held = value
-	if _held:
-		type_label.visible = value
+	type_label.visible = false
 
 func get_paper_type() -> int :
 	return paper_type
@@ -50,6 +72,7 @@ func pick_up(target: Node3D, flight_time: float) -> void:
 	angular_velocity = Vector3.ZERO
 	_held = false
 	_is_player_thrown = false
+	_free_flight_time = 0.0
 	_flight_target = target
 	_hold_point = target
 	_flight_from = global_position
@@ -72,6 +95,7 @@ func drop(throw_velocity: Vector3) -> void:
 	collision_mask = get_meta("pickup_mask", 1)
 	linear_velocity = throw_velocity
 	_is_player_thrown = true
+	_free_flight_time = 0.0
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if global_position.y < KILL_Y:
@@ -85,7 +109,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var target_pos := _flight_target.global_position + _flight_target.global_basis * hold_offset
 		var tform := state.transform
 		tform.origin = _flight_from.lerp(target_pos, t)
-		tform.basis = _flight_from_basis.slerp(_flight_target.global_basis, t)
+		var target_basis : Basis = _flight_target.global_basis * FACE_PLAYER_BASIS if hold_offset == Vector3.ZERO else Basis.IDENTITY
+		tform.basis = _flight_from_basis.slerp(target_basis, t)
 		state.transform = tform
 		state.linear_velocity = Vector3.ZERO
 		state.angular_velocity = Vector3.ZERO
@@ -93,11 +118,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if _flight_progress >= 1.0:
 			_held = true
 			_flight_target = null
-			type_label.visible = show_label_while_held
+			type_label.visible = false
 			picked_up.emit(self)
 	elif _held and _hold_point != null:
 		var tform := _hold_point.global_transform
 		tform.origin += _hold_point.global_basis * hold_offset
+		tform.basis = _hold_point.global_basis * FACE_PLAYER_BASIS if hold_offset == Vector3.ZERO else Basis.IDENTITY
 		state.transform = tform
 		state.linear_velocity = Vector3.ZERO
 		state.angular_velocity = Vector3.ZERO
@@ -121,9 +147,12 @@ func _apply_magnet(state: PhysicsDirectBodyState3D) -> void:
 		return
 	if state.linear_velocity.length() < 1.0:
 		return
-	var blend : float = clampf(1.0 - exp(-round_ctrl.magnet_strength * state.step * 1.5), 0.0, 1.0)
-	var desired := offset.normalized() * state.linear_velocity.length()
-	state.linear_velocity = state.linear_velocity.lerp(desired, blend)
+	_free_flight_time += state.step
+	var ramp : float = clampf(_free_flight_time / MAGNET_RAMP_TIME, 0.0, 1.0)
+	var k : float = round_ctrl.magnet_strength * MAGNET_K * ramp
+	var spring := offset * k
+	var damping := -state.linear_velocity * MAGNET_DAMPING
+	state.apply_central_force(spring + damping)
 
 func _nearest_correct_storage() -> Node3D:
 	var best : Node3D = null

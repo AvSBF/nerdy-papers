@@ -4,9 +4,22 @@ class_name PaperStorage
 signal paper_deposited(count: int)
 signal wrong_paper
 
+const TYPE_COLORS : Array[Color] = [
+	Color(0.20, 0.45, 0.90),
+	Color(0.25, 0.75, 0.35),
+	Color(0.95, 0.40, 0.70),
+	Color(0.85, 0.25, 0.25),
+]
+
 @onready var detect_area : Area3D = $DetectArea
 @onready var count_label : Label3D = $CountLabel
 @onready var type_label : Label3D = $TypeLabel
+@onready var color_blocks : Array[MeshInstance3D] = [
+	$ColorBlockFront as MeshInstance3D,
+	$ColorBlockBack as MeshInstance3D,
+	$ColorBlockLeft as MeshInstance3D,
+	$ColorBlockRight as MeshInstance3D,
+]
 
 @export var paper_type : int = 1
 @export var throw_speed : float = 10.0
@@ -23,7 +36,19 @@ func _ready() -> void:
 	add_to_group("paper_storage")
 	detect_area.body_entered.connect(_on_body_entered)
 	type_label.text = str(paper_type)
+	type_label.visible = false
+	_apply_type_color()
 	_update_label()
+
+func _apply_type_color() -> void:
+	var mat := StandardMaterial3D.new()
+	var color := TYPE_COLORS[clampi(paper_type - 1, 0, TYPE_COLORS.size() - 1)]
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 0.8
+	for block in color_blocks:
+		block.material_override = mat
 
 func _on_body_entered(body: Node3D) -> void:
 	if not body.is_in_group("paper"):
@@ -73,7 +98,7 @@ func _update_label() -> void:
 	count_label.text = str(count)
 
 func set_hint(on: bool) -> void:
-	type_label.modulate = Color(0.2, 1.0, 0.4) if on else Color.WHITE
+	$Outline.visible = on
 
 func _is_same_paper_type(paper : Node3D) -> bool:
 	return paper.get_paper_type() == paper_type
