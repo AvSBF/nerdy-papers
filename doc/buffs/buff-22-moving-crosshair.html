@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Движущийся прицел — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Движущийся прицел</h1>
+    <p class="lead">
+      Прицел больше не стоит на месте: он хаотично гуляет в небольшом квадрате
+      в центре экрана, и скорость гуляния растёт.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "moving_crosshair"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+      <span class="status impl">реализовано</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">🎯</div>
+      <div>
+        <h4>Прицел гуляет в квадрате ±18 px</h4>
+        <p>
+          Прицел получает случайные ускорения, его скорость ограничена
+          <code>crosshair_strength</code>. Каждый выбор увеличивает и скорость, и
+          размах блуждания. Прицел не выходит за небольшой квадрат в центре.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>прицел неподвижен</b>центр экрана</div>
+      <div class="chip green">1-й выбор<b>медленное блуждание</b>маленький квадрат</div>
+      <div class="chip green">2-й выбор<b>быстрее</b>размах больше</div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Движущийся прицел» — крестик должен начать гулять.</li>
+      <li>Выбери ещё раз — гуляние должно стать быстрее.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Пикселизация — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Пикселизация</h1>
+    <p class="lead">
+      Картинка становится всё более пиксельной — дальние урны превращаются в кашу
+      из квадратов. UI не затрагивается.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "pixelation"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+      <span class="status impl">реализовано</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">🟥</div>
+      <div>
+        <h4>+20% пикселизации за выбор, потолок 90%</h4>
+        <p>
+          Полноэкранный оверлей читает экран и уменьшает его разрешение
+          (<code>SCREEN_TEXTURE</code>). Чем больше <code>pixelation_amount</code>,
+          тем крупнее «пиксели». Слой оверлея ниже UI — панели остаются чёткими.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>0%</b>чёткая картинка</div>
+      <div class="chip green">1-й выбор<b>20%</b>заметная зернистость</div>
+      <div class="chip green">2-й выбор<b>40%</b>крупные пиксели</div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Пикселизацию» — 3D-картинка должна стать зернистой.</li>
+      <li>Проверь, что панели квоты/баффов и дебаг-меню остались чёткими.</li>
+      <li>Выбери ещё раз — зернистость должна усилиться (не выше 90%).</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+</body>
+</html>

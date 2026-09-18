@@ -69,6 +69,7 @@
 .buff-tags .tag.id { color: var(--accent-2); border-color: rgba(108, 196, 242, 0.4); }
 .buff-tags .tag.green { color: var(--green); border-color: rgba(126, 231, 135, 0.4); }
 .buff-tags .tag.red { color: var(--red); border-color: rgba(255, 123, 114, 0.4); }
+.buff-tags .tag.yellow { color: var(--yellow); border-color: rgba(227, 179, 65, 0.45); }
 .buff-tags .tag.duration { color: var(--yellow); border-color: rgba(227, 179, 65, 0.4); }
 
 /* ---------- Схема работы (flow) ---------- */

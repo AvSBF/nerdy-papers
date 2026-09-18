@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тряска камеры — дебафф — Nerdy Papers</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="buffs.css">
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../index.html">
+      <span class="logo">N</span>
+      <span>Nerdy Papers<small>баффы</small></span>
+    </a>
+    <div class="toc" id="toc">
+      <div class="nav-title">На этой странице</div>
+      <a href="#effect">Эффект</a>
+      <a href="#test">Как проверить</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="chapter-kicker">ДЕБАФФ · КРАСНАЯ КАРТОЧКА</div>
+    <h1>Тряска камеры</h1>
+    <p class="lead">
+      Камера начинает дрожать, и с каждым новым выбором тряска становится сильнее.
+    </p>
+
+    <div class="buff-tags">
+      <span class="tag id">buff_id: "camera_shake"</span>
+      <span class="tag red">дебафф · красная</span>
+      <span class="tag duration">весь раунд · стакается</span>
+      <span class="status impl">реализовано</span>
+    </div>
+
+    <h2 id="effect">Эффект</h2>
+    <div class="effect-card red">
+      <div class="icon">📳</div>
+      <div>
+        <h4>Сила тряски +1 за выбор</h4>
+        <p>
+          Каждый кадр камера смещается на случайное смещение. Амплитуда растёт с
+          <code>camera_shake_strength</code>: каждый выбор добавляет единицу силы.
+        </p>
+      </div>
+    </div>
+
+    <div class="stat-chips">
+      <div class="chip">Без дебаффа<b>0</b>камера стабильна</div>
+      <div class="chip green">1-й выбор<b>сила 1</b>лёгкая дрожь</div>
+      <div class="chip green">2-й выбор<b>сила 2</b>тряска сильнее</div>
+    </div>
+
+    <h2 id="test">Как проверить в игре</h2>
+    <ol>
+      <li>Выбери «Тряску камеры» — картинка должна заметно дрожать.</li>
+      <li>Выбери ещё раз — дрожь должна усилиться.</li>
+    </ol>
+
+    <div class="chapter-nav">
+      <a class="next" href="index.html"><span class="dir">← Назад</span>Каталог баффов</a>
+    </div>
+  </main>
+</div>
+
+<button class="back-top" title="Наверх">↑</button>
+<script src="../app.js"></script>
+</body>
+</html>
