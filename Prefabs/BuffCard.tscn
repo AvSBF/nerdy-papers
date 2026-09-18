@@ -90,19 +90,19 @@ color = Color(0.16, 0.55, 0.32, 1)
 mouse_filter = 2
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
-text = "БАФФ"
+text = "BUFF"
 
 [node name="TitleLabel" type="Label" parent="Margin/VBox"]
 mouse_filter = 2
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 24
-text = "Заголовок"
+text = "Title"
 
 [node name="DescLabel" type="Label" parent="Margin/VBox"]
 mouse_filter = 2
 horizontal_alignment = 1
 autowrap_mode = 3
-text = "Описание"
+text = "Description"
 
 [node name="Spacer" type="Control" parent="Margin/VBox"]
 size_flags_vertical = 3

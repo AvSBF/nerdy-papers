@@ -25,8 +25,8 @@ func setup(data: Dictionary) -> void:
 	top_stripe.color = color
 	type_label.add_theme_color_override("font_color", color)
 	type_label.text = "BUFF" if card_type == "green" else ("DEBUFF" if card_type == "red" else "RANDOM")
-	title_label.text = str(data.get("title", "Без названия"))
-	desc_label.text = str(data.get("desc", "Заглушка"))
+	title_label.text = str(data.get("title", "Untitled"))
+	desc_label.text = str(data.get("desc", "Placeholder"))
 
 func _on_pressed() -> void:
 	chosen.emit(self)

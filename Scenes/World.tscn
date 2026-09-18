@@ -11,6 +11,8 @@
 [ext_resource type="PackedScene" uid="uid://cuxo5cfijmurj" path="res://Scenes/BuffUI.tscn" id="8_uo7di"]
 [ext_resource type="Shader" path="res://Shaders/pixelation.gdshader" id="9_pixshader"]
 [ext_resource type="Script" path="res://Scripts/UI/screen_effects.gd" id="10_pixscript"]
+[ext_resource type="PackedScene" path="res://Scenes/Menus.tscn" id="11_menus"]
+[ext_resource type="PackedScene" path="res://Prefabs/Borders.tscn" id="12_borders"]
 
 [sub_resource type="Environment" id="Environment_mmoe8"]
 background_mode = 1
@@ -91,3 +93,7 @@ color = Color(0, 0, 0, 0)
 [node name="Round Controller" type="Node" parent="." unique_id=944369856 groups=["round_controller"]]
 script = ExtResource("8_q2d71")
 quota_growth_range = Vector2(1.5, 2.5)
+
+[node name="Menus" parent="." instance=ExtResource("11_menus")]
+
+[node name="Borders" parent="." instance=ExtResource("12_borders")]

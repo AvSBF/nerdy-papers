@@ -35,7 +35,7 @@ custom_minimum_size = Vector2(34, 0)
 text = "10"
 
 [node name="SpawnButton" type="Button" parent="Panel/Margin/VBox/SpawnRow"]
-text = "Спавн"
+text = "Spawn"
 
 [node name="MaxHeldRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
 
@@ -52,10 +52,10 @@ custom_minimum_size = Vector2(34, 0)
 text = "1"
 
 [node name="DeleteButton" type="Button" parent="Panel/Margin/VBox"]
-text = "Удалить все бумажки"
+text = "Delete all papers"
 
 [node name="ForceCardsButton" type="Button" parent="Panel/Margin/VBox"]
-text = "Показать карточки"
+text = "Show cards"
 
 [node name="DepositRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
 
@@ -72,13 +72,13 @@ custom_minimum_size = Vector2(34, 0)
 text = "5"
 
 [node name="DepositButton" type="Button" parent="Panel/Margin/VBox/DepositRow"]
-text = "Бумажки"
+text = "Deposit"
 
 [node name="CompleteQuotaButton" type="Button" parent="Panel/Margin/VBox"]
-text = "Выполнить квоту"
+text = "Complete quota"
 
 [node name="NextQuotaButton" type="Button" parent="Panel/Margin/VBox"]
-text = "Следующая квота"
+text = "Next quota"
 
 [node name="BuffRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
 
@@ -86,4 +86,4 @@ text = "Следующая квота"
 size_flags_horizontal = 3
 
 [node name="ApplyBuffButton" type="Button" parent="Panel/Margin/VBox/BuffRow"]
-text = "Применить бафф"
+text = "Apply buff"

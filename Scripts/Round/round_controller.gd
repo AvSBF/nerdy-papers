@@ -4,13 +4,18 @@ class_name RoundController
 signal deposits_changed(total_deposited: int, buff_threshold: int)
 signal buff_required_reached
 signal quota_reached
+signal quota_timeout
 
 @export var buff_threshold_range : Vector2 = Vector2(3, 5)
 @export var quota_growth_range : Vector2
 
+const QUOTA_TIME : float = 60.0
+
 var total_deposited : int = 0
 var buff_threshold : int = 0
 var quota_target : int = 3
+var quota_time_left : float = QUOTA_TIME
+var _playing : bool = false
 
 # баффы
 # очки за бумажку
@@ -86,6 +91,20 @@ func reset_round() -> void:
 	buff_threshold = 0
 	roll_required()
 
+func start_round() -> void:
+	_playing = true
+	reset_round()
+	quota_time_left = QUOTA_TIME
+
+func _process(delta: float) -> void:
+	if not _playing:
+		return
+	quota_time_left -= delta
+	if quota_time_left <= 0.0:
+		quota_time_left = 0.0
+		_playing = false
+		quota_timeout.emit()
+
 func _on_paper_deposited(_count: int) -> void:
 	combo_streak += 1
 	var bonus := 0
@@ -115,6 +134,7 @@ func roll_required() -> void:
 func quota_change_required():
 	var increment := int(quota_target * randf_range(quota_growth_range.x, quota_growth_range.y))
 	quota_target = total_deposited + increment
+	quota_time_left = QUOTA_TIME
 	deposits_changed.emit(total_deposited, buff_threshold)
 
 func add_deposits(amount: int) -> void:
