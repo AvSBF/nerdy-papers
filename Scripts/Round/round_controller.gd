@@ -89,7 +89,24 @@ func reset_round() -> void:
 	quota_target = 3
 	total_deposited = 0
 	buff_threshold = 0
+	_reset_buffs()
 	roll_required()
+
+func _reset_buffs() -> void:
+	points_per_paper = 1
+	current_additional_speed = 0
+	additional_held_papers = 0
+	additional_interaction_distance = 0
+	additional_throw_speed = 0
+	button_cooldown_multiplier = 1.0
+	magnet_strength = 0.0
+	combo_enabled = false
+	combo_streak = 0
+	hint_enabled = false
+	invert_look = false
+	camera_shake_strength = 0.0
+	pixelation_amount = 0.0
+	crosshair_strength = 0.0
 
 func start_round() -> void:
 	_playing = true
