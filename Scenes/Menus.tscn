@@ -1,8 +1,13 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://bm5ttb232s7rp"]
 
-[ext_resource type="Script" path="res://Scripts/UI/game_controller.gd" id="1_menu"]
+[ext_resource type="Script" uid="uid://i24ph0dqfhc1" path="res://Scripts/UI/game_controller.gd" id="1_menu"]
+[ext_resource type="Texture2D" uid="uid://yq20fexk4pe3" path="res://icon.png" id="2_ek14q"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 34.0
+content_margin_top = 28.0
+content_margin_right = 34.0
+content_margin_bottom = 28.0
 bg_color = Color(0.1, 0.12, 0.16, 0.96)
 border_width_left = 1
 border_width_top = 1
@@ -13,10 +18,6 @@ corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
-content_margin_left = 34.0
-content_margin_top = 28.0
-content_margin_right = 34.0
-content_margin_bottom = 28.0
 shadow_color = Color(0, 0, 0, 0.5)
 shadow_size = 14
 
@@ -32,35 +33,39 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[node name="Menus" type="CanvasLayer"]
-layer = 100
+[node name="Menus" type="CanvasLayer" unique_id=873551931]
 process_mode = 3
+layer = 100
 script = ExtResource("1_menu")
 
-[node name="TimerLabel" type="Label" parent="."]
+[node name="TimerLabel" type="Label" parent="." unique_id=1797835780]
 anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 0.0
 anchor_right = 0.5
-anchor_bottom = 0.0
 offset_left = -60.0
 offset_top = 18.0
 offset_right = 60.0
 offset_bottom = 56.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 34
-horizontal_alignment = 1
 text = "01:00"
+horizontal_alignment = 1
 
-[node name="MainMenu" type="Control" parent="."]
+[node name="MainMenu" type="Control" parent="." unique_id=318758895]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Dimmer" type="ColorRect" parent="MainMenu"]
-anchors_preset = 15
+[node name="Sprite2D2" type="Sprite2D" parent="MainMenu" unique_id=463416448]
+position = Vector2(1797, 329.00003)
+scale = Vector2(1.9533492, 0.5398724)
+texture = ExtResource("2_ek14q")
+
+[node name="Dimmer" type="ColorRect" parent="MainMenu" unique_id=2088718387]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -68,47 +73,63 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.03, 0.05, 0.08, 0.9)
 
-[node name="Center" type="CenterContainer" parent="MainMenu"]
+[node name="Center" type="CenterContainer" parent="MainMenu" unique_id=1864132558]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 548.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="MainMenu/Center"]
+[node name="Panel" type="PanelContainer" parent="MainMenu/Center" unique_id=713324924]
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="MainMenu/Center/Panel"]
+[node name="VBox" type="VBoxContainer" parent="MainMenu/Center/Panel" unique_id=494896429]
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="MainMenu/Center/Panel/VBox"]
+[node name="Title" type="Label" parent="MainMenu/Center/Panel/VBox" unique_id=1117281456]
+layout_mode = 2
 theme_override_font_sizes/font_size = 42
-horizontal_alignment = 1
 text = "NERDY PAPERS"
+horizontal_alignment = 1
 
-[node name="Desc" type="Label" parent="MainMenu/Center/Panel/VBox"]
+[node name="Desc" type="Label" parent="MainMenu/Center/Panel/VBox" unique_id=1131713906]
 custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+text = "Throw papers into the bin with a matching type.
+Complete the quota within 1 minute — then it grows.
+Every few throws pick a card: buff or debuff."
 horizontal_alignment = 1
 autowrap_mode = 2
-text = "Throw papers into the bin with a matching type.\nComplete the quota within 1 minute — then it grows.\nEvery few throws pick a card: buff or debuff."
 
-[node name="PlayButton" type="Button" parent="MainMenu/Center/Panel/VBox"]
+[node name="PlayButton" type="Button" parent="MainMenu/Center/Panel/VBox" unique_id=1832909599]
 custom_minimum_size = Vector2(240, 46)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+layout_mode = 2
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "Play"
 
-[node name="PauseMenu" type="Control" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="MainMenu/Center" unique_id=1246993040]
+position = Vector2(-312, 326.99997)
+scale = Vector2(0.5398724, 0.5398724)
+texture = ExtResource("2_ek14q")
+
+[node name="PauseMenu" type="Control" parent="." unique_id=1821944514]
+visible = false
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Dimmer" type="ColorRect" parent="PauseMenu"]
-anchors_preset = 15
+[node name="Dimmer" type="ColorRect" parent="PauseMenu" unique_id=76165805]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -116,57 +137,65 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.03, 0.05, 0.08, 0.75)
 
-[node name="Center" type="CenterContainer" parent="PauseMenu"]
-anchors_preset = 15
+[node name="Center" type="CenterContainer" parent="PauseMenu" unique_id=805980676]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="PauseMenu/Center"]
+[node name="Panel" type="PanelContainer" parent="PauseMenu/Center" unique_id=1450755648]
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="PauseMenu/Center/Panel"]
+[node name="VBox" type="VBoxContainer" parent="PauseMenu/Center/Panel" unique_id=451302160]
+layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Title" type="Label" parent="PauseMenu/Center/Panel/VBox"]
+[node name="Title" type="Label" parent="PauseMenu/Center/Panel/VBox" unique_id=1529546202]
+layout_mode = 2
 theme_override_font_sizes/font_size = 34
-horizontal_alignment = 1
 text = "PAUSE"
+horizontal_alignment = 1
 
-[node name="ContinueButton" type="Button" parent="PauseMenu/Center/Panel/VBox"]
+[node name="ContinueButton" type="Button" parent="PauseMenu/Center/Panel/VBox" unique_id=1747011268]
 custom_minimum_size = Vector2(240, 42)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "Continue"
 
-[node name="RestartButton" type="Button" parent="PauseMenu/Center/Panel/VBox"]
+[node name="RestartButton" type="Button" parent="PauseMenu/Center/Panel/VBox" unique_id=192959040]
 custom_minimum_size = Vector2(240, 42)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "Restart"
 
-[node name="MenuButton" type="Button" parent="PauseMenu/Center/Panel/VBox"]
+[node name="MenuButton" type="Button" parent="PauseMenu/Center/Panel/VBox" unique_id=838800811]
 custom_minimum_size = Vector2(240, 42)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "Main Menu"
 
-[node name="DefeatScreen" type="Control" parent="."]
+[node name="DefeatScreen" type="Control" parent="." unique_id=723445295]
+visible = false
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Dimmer" type="ColorRect" parent="DefeatScreen"]
-anchors_preset = 15
+[node name="Dimmer" type="ColorRect" parent="DefeatScreen" unique_id=161665381]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -174,40 +203,46 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.12, 0.03, 0.03, 0.92)
 
-[node name="Center" type="CenterContainer" parent="DefeatScreen"]
-anchors_preset = 15
+[node name="Center" type="CenterContainer" parent="DefeatScreen" unique_id=1825316258]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="DefeatScreen/Center"]
+[node name="Panel" type="PanelContainer" parent="DefeatScreen/Center" unique_id=1307082676]
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="DefeatScreen/Center/Panel"]
+[node name="VBox" type="VBoxContainer" parent="DefeatScreen/Center/Panel" unique_id=808684187]
+layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Title" type="Label" parent="DefeatScreen/Center/Panel/VBox"]
+[node name="Title" type="Label" parent="DefeatScreen/Center/Panel/VBox" unique_id=1272348372]
+layout_mode = 2
 theme_override_font_sizes/font_size = 36
-horizontal_alignment = 1
 text = "DEFEAT"
-
-[node name="Desc" type="Label" parent="DefeatScreen/Center/Panel/VBox"]
 horizontal_alignment = 1
-text = "Quota not completed in time!"
 
-[node name="RestartButton" type="Button" parent="DefeatScreen/Center/Panel/VBox"]
+[node name="Desc" type="Label" parent="DefeatScreen/Center/Panel/VBox" unique_id=803932256]
+layout_mode = 2
+text = "Quota not completed in time!"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="DefeatScreen/Center/Panel/VBox" unique_id=1290557073]
 custom_minimum_size = Vector2(240, 42)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "Restart"
 
-[node name="MenuButton" type="Button" parent="DefeatScreen/Center/Panel/VBox"]
+[node name="MenuButton" type="Button" parent="DefeatScreen/Center/Panel/VBox" unique_id=1607079165]
 custom_minimum_size = Vector2(240, 42)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "Main Menu"

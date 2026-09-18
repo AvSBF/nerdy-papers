@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="Nerdy Papers"
+config/description="Throw papers into the bin with a matching type.
+Complete the quota within 1 minute — then it grows.
+Every few throws pick a card: buff or debuff."
+config/version="0.1"
 run/main_scene="uid://mc4yqo01ompn"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="uid://yq20fexk4pe3"
 
 [display]
 
