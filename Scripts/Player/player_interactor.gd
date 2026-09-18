@@ -33,6 +33,8 @@ func _physics_process(_delta: float) -> void:
 	_update_target()
 
 func _update_target() -> void:
+	if current_target != null and not is_instance_valid(current_target):
+		current_target = null
 	var target := _find_target()
 	if target == current_target:
 		return
@@ -42,7 +44,7 @@ func _update_target() -> void:
 	target_changed.emit(current_target)
 
 func _set_target_highlight(node: Node, on: bool) -> void:
-	if node != null and node.is_in_group("paper"):
+	if node != null and is_instance_valid(node) and node.is_in_group("paper"):
 		var paper := node as Paper
 		if paper:
 			paper.set_highlighted(on)
@@ -124,7 +126,7 @@ func _throw_top_paper() -> void:
 	_update_held_labels()
 
 	if is_instance_valid(paper):
-		paper.drop(-camera.global_transform.basis.z * throw_speed)
+		paper.drop(-camera.global_transform.basis.z * (throw_speed + _round.additional_throw_speed))
 
 	if not held_papers.is_empty():
 		var tween := create_tween()

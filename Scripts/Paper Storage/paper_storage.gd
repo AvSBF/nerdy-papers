@@ -2,6 +2,7 @@ extends Node3D
 class_name PaperStorage
 
 signal paper_deposited(count: int)
+signal wrong_paper
 
 @onready var detect_area : Area3D = $DetectArea
 @onready var count_label : Label3D = $CountLabel
@@ -36,6 +37,7 @@ func _on_body_entered(body: Node3D) -> void:
 		paper_deposited.emit(count)
 	else:
 		_throw_toward_player(body)
+		wrong_paper.emit()
 
 func _spawn_plus_one_label() -> void:
 	if plus_one_label_scene == null:
@@ -69,6 +71,9 @@ func _spawn_plus_one_label() -> void:
 
 func _update_label() -> void:
 	count_label.text = str(count)
+
+func set_hint(on: bool) -> void:
+	type_label.modulate = Color(0.2, 1.0, 0.4) if on else Color.WHITE
 
 func _is_same_paper_type(paper : Node3D) -> bool:
 	return paper.get_paper_type() == paper_type

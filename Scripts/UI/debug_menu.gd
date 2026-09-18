@@ -13,9 +13,36 @@ extends CanvasLayer
 @onready var deposit_button : Button = $Panel/Margin/VBox/DepositRow/DepositButton
 @onready var complete_quota_button : Button = $Panel/Margin/VBox/CompleteQuotaButton
 @onready var next_quota_button : Button = $Panel/Margin/VBox/NextQuotaButton
+@onready var buff_option : OptionButton = $Panel/Margin/VBox/BuffRow/BuffOption
+@onready var apply_buff_button : Button = $Panel/Margin/VBox/BuffRow/ApplyBuffButton
 
 @onready var interactor : Node = get_tree().current_scene.get_node("Player/Interactor")
 @onready var round : Node = get_tree().current_scene.get_node("Round Controller")
+
+const BUFFS : Array[Dictionary] = [
+	{"id": "extra_points", "label": "Бонусные очки"},
+	{"id": "movement_speed_positive", "label": "Лёгкие ноги"},
+	{"id": "movement_speed_negative", "label": "Тяжёлые ноги"},
+	{"id": "quota_change_positive", "label": "Экономия"},
+	{"id": "quota_change_negative", "label": "Жадность"},
+	{"id": "more_hands", "label": "Вторая рука"},
+	{"id": "less_hands", "label": "Скупые руки"},
+	{"id": "interaction_range_positive", "label": "Длинная рука"},
+	{"id": "interaction_range_negative", "label": "Короткая рука"},
+	{"id": "power_throw", "label": "Мощный бросок"},
+	{"id": "weak_throw", "label": "Слабый бросок"},
+	{"id": "automation", "label": "Автоматизация"},
+	{"id": "stingy_points", "label": "Скупые очки"},
+	{"id": "magnet", "label": "Магнит"},
+	{"id": "combo", "label": "Комбо"},
+	{"id": "hint", "label": "Подсказчик"},
+	{"id": "inversion", "label": "Инверсия"},
+	{"id": "disable_inversion", "label": "Снятие инверсии"},
+	{"id": "camera_shake", "label": "Тряска камеры"},
+	{"id": "pixelation", "label": "Пикселизация"},
+	{"id": "moving_crosshair", "label": "Движущийся прицел"},
+	{"id": "random", "label": "Случайный бафф (жёлтый)"},
+]
 
 func _ready() -> void:
 	panel.visible = false
@@ -28,9 +55,24 @@ func _ready() -> void:
 	deposit_button.pressed.connect(_on_deposit_pressed)
 	complete_quota_button.pressed.connect(_on_complete_quota_pressed)
 	next_quota_button.pressed.connect(_on_next_quota_pressed)
+	apply_buff_button.pressed.connect(_on_apply_buff_pressed)
+	_populate_buff_option()
 	_on_spawn_count_changed(spawn_count_slider.value)
 	_on_max_held_changed(max_held_slider.value)
 	_on_deposit_count_changed(deposit_count_slider.value)
+
+func _populate_buff_option() -> void:
+	buff_option.clear()
+	for i in BUFFS.size():
+		var buff : Dictionary = BUFFS[i]
+		buff_option.add_item("%s (%s)" % [buff.label, buff.id], i)
+		buff_option.set_item_metadata(i, buff.id)
+
+func _on_apply_buff_pressed() -> void:
+	if round == null:
+		return
+	var buff_id : String = buff_option.get_selected_metadata()
+	round.apply_buff(buff_id)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_menu"):

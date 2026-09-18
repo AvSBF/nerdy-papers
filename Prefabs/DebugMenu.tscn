@@ -79,3 +79,11 @@ text = "Выполнить квоту"
 
 [node name="NextQuotaButton" type="Button" parent="Panel/Margin/VBox"]
 text = "Следующая квота"
+
+[node name="BuffRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+
+[node name="BuffOption" type="OptionButton" parent="Panel/Margin/VBox/BuffRow"]
+size_flags_horizontal = 3
+
+[node name="ApplyBuffButton" type="Button" parent="Panel/Margin/VBox/BuffRow"]
+text = "Применить бафф"

@@ -8,6 +8,10 @@ extends Node3D
 @export var wait_time : float = 0.3
 
 var _is_pressed : bool = false
+var _round : Node
+
+func _ready() -> void:
+	_round = get_tree().get_first_node_in_group("round_controller")
 
 func interact():
 	if _is_pressed:
@@ -16,7 +20,8 @@ func interact():
 
 	moving_part.position.y = minimum_position
 	creator.spawn_paper()
-	await get_tree().create_timer(wait_time).timeout
+	var cooldown : float = wait_time * _round.button_cooldown_multiplier
+	await get_tree().create_timer(cooldown).timeout
 
 	moving_part.position.y = initial_position
 	_is_pressed = false

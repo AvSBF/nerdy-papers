@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" uid="uid://crud2rvtp0ttd" path="res://Scenes/QuotaUI.tscn" id="7_y7y61"]
 [ext_resource type="Script" uid="uid://b2l86utljavna" path="res://Scripts/Round/round_controller.gd" id="8_q2d71"]
 [ext_resource type="PackedScene" uid="uid://cuxo5cfijmurj" path="res://Scenes/BuffUI.tscn" id="8_uo7di"]
+[ext_resource type="Shader" path="res://Shaders/pixelation.gdshader" id="9_pixshader"]
+[ext_resource type="Script" path="res://Scripts/UI/screen_effects.gd" id="10_pixscript"]
 
 [sub_resource type="Environment" id="Environment_mmoe8"]
 background_mode = 1
@@ -23,7 +25,10 @@ fog_depth_end = 10.0
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_j0p05"]
 
-[sub_resource type="Compositor" id="Compositor_5nsto"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pix"]
+shader = ExtResource("9_pixshader")
+shader_uniforms/pixel_size = 0.1
+shader_uniforms/grain_strength = 0.06
 
 [node name="World" type="Node3D" unique_id=533226924]
 
@@ -35,7 +40,6 @@ transform = Transform3D(20, 0, 0, 0, 0.05, 0, 0, 0, 20, 0, 0, 0)
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=771962969]
 environment = SubResource("Environment_mmoe8")
 camera_attributes = SubResource("CameraAttributesPractical_j0p05")
-compositor = SubResource("Compositor_5nsto")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldEnvironment" unique_id=828607816]
 transform = Transform3D(0.9010685, 0, -0.4336768, 0.2033406, 0.88326406, 0.4224893, 0.38305113, -0.46887589, 0.79588145, 0, 7, 0)
@@ -69,6 +73,20 @@ paper_type = 4
 [node name="QuotaUI" parent="." unique_id=1553816689 instance=ExtResource("7_y7y61")]
 
 [node name="BuffUi" parent="." unique_id=85365021 instance=ExtResource("8_uo7di")]
+
+[node name="ScreenEffects" type="CanvasLayer" parent="."]
+layer = 0
+script = ExtResource("10_pixscript")
+
+[node name="EffectsRect" type="ColorRect" parent="ScreenEffects"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_pix")
+color = Color(0, 0, 0, 0)
 
 [node name="Round Controller" type="Node" parent="." unique_id=944369856 groups=["round_controller"]]
 script = ExtResource("8_q2d71")

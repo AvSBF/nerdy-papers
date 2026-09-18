@@ -6,6 +6,8 @@ extends RigidBody3D
 signal picked_up(paper: Paper)
 
 const KILL_Y : float = -0.5
+const MAGNET_RADIUS : float = 8.0
+const MAGNET_AIM_HEIGHT : float = 1.1
 
 @onready var type_label : Label3D = $TypeLabel
 @onready var outline : PaperOutline = $Outline
@@ -13,6 +15,7 @@ const KILL_Y : float = -0.5
 func _ready() -> void:
 	type_label.text = str(paper_type)
 	type_label.visible = false
+	continuous_cd = true
 
 func set_highlighted(on: bool) -> void:
 	outline.set_highlighted(on)
@@ -24,6 +27,7 @@ var _flight_from_basis : Basis = Basis.IDENTITY
 var _flight_progress : float = 0.0
 var _flight_time : float = 0.0
 var _held : bool = false
+var _is_player_thrown : bool = false
 var hold_offset : Vector3 = Vector3.ZERO
 var show_label_while_held : bool = true
 
@@ -45,6 +49,7 @@ func pick_up(target: Node3D, flight_time: float) -> void:
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	_held = false
+	_is_player_thrown = false
 	_flight_target = target
 	_hold_point = target
 	_flight_from = global_position
@@ -66,6 +71,7 @@ func drop(throw_velocity: Vector3) -> void:
 	collision_layer = get_meta("pickup_layer", 1)
 	collision_mask = get_meta("pickup_mask", 1)
 	linear_velocity = throw_velocity
+	_is_player_thrown = true
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if global_position.y < KILL_Y:
@@ -95,3 +101,38 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		state.transform = tform
 		state.linear_velocity = Vector3.ZERO
 		state.angular_velocity = Vector3.ZERO
+	else:
+		_apply_magnet(state)
+
+func _apply_magnet(state: PhysicsDirectBodyState3D) -> void:
+	if not _is_player_thrown:
+		return
+	var round_ctrl := get_tree().get_first_node_in_group("round_controller")
+	if round_ctrl == null or round_ctrl.magnet_strength <= 0.0:
+		return
+	var target := _nearest_correct_storage()
+	if target == null:
+		return
+	var from := state.transform.origin
+	var aim := target.global_position + Vector3(0, MAGNET_AIM_HEIGHT, 0)
+	var offset := aim - from
+	var dist := offset.length()
+	if dist > MAGNET_RADIUS:
+		return
+	if state.linear_velocity.length() < 1.0:
+		return
+	var blend : float = clampf(1.0 - exp(-round_ctrl.magnet_strength * state.step * 1.5), 0.0, 1.0)
+	var desired := offset.normalized() * state.linear_velocity.length()
+	state.linear_velocity = state.linear_velocity.lerp(desired, blend)
+
+func _nearest_correct_storage() -> Node3D:
+	var best : Node3D = null
+	var best_dist := INF
+	for storage in get_tree().get_nodes_in_group("paper_storage"):
+		if storage.paper_type != paper_type:
+			continue
+		var d := global_position.distance_to(storage.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = storage
+	return best
