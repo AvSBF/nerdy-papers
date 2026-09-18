@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Префабы Nerdy Papers — каталог для скриншотов</title>
+<style>
+  :root {
+    --bg: #0a0f15;
+    --stage-h: 460px;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+    --type-1: #3373e6;
+    --type-2: #40bf59;
+    --type-3: #f266b3;
+    --type-4: #d94040;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; }
+
+  body {
+    background: radial-gradient(1200px 700px at 50% -5%, #14202d 0%, var(--bg) 55%) fixed;
+    color: #e6edf3;
+    font-family: var(--sans);
+    line-height: 1.55;
+  }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 42px 28px 80px;
+  }
+
+  header h1 { margin: 0 0 6px; font-size: 2rem; letter-spacing: -0.5px; }
+  header p { margin: 0 0 4px; color: #93a1b1; font-size: 15px; max-width: 860px; }
+  header .hint {
+    display: inline-block;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #6cc4f2;
+    border: 1px solid rgba(108,196,242,.35);
+    background: rgba(71,140,191,.1);
+    border-radius: 999px;
+    padding: 4px 14px;
+  }
+
+  section.prefab { margin-top: 46px; }
+
+  .caption {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 10px;
+  }
+  .caption h2 { margin: 0; font-size: 1.25rem; }
+  .caption .file {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #d2a8ff;
+    background: rgba(210,168,255,.1);
+    border: 1px solid rgba(210,168,255,.3);
+    border-radius: 6px;
+    padding: 2px 10px;
+  }
+  .caption .desc { font-size: 13px; color: #93a1b1; }
+
+  /* ---------- Общая сцена ---------- */
+
+  .stage {
+    position: relative;
+    height: var(--stage-h);
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid #1e2938;
+    background:
+      radial-gradient(130% 95% at 50% 12%, #192632 0%, transparent 60%),
+      radial-gradient(100% 100% at 50% 0%, #1a2634 0%, #0c1118 50%, #070b10 100%);
+    background-color: #0c1118;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+
+  .stage .floor {
+    position: absolute;
+    left: -25%;
+    right: -25%;
+    bottom: -8%;
+    height: 62%;
+    transform: perspective(700px) rotateX(64deg);
+    transform-origin: 50% 100%;
+    background:
+      repeating-linear-gradient(90deg, rgba(120,160,210,.10) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(0deg, rgba(120,160,210,.10) 0 1px, transparent 1px 44px),
+      linear-gradient(180deg, rgba(38,52,70,.25), rgba(10,14,20,.4));
+    pointer-events: none;
+  }
+  .stage .floor::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(90% 60% at 50% 10%, rgba(108,196,242,.06), transparent 70%);
+  }
+
+  .stage .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    background: radial-gradient(85% 75% at 50% 45%, transparent 55%, rgba(0,0,0,.5) 100%);
+  }
+
+  .stage .zone {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------- 3D-мир ---------- */
+
+  .viewport { perspective: 1300px; }
+  .world {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(-22deg) rotateY(-38deg);
+  }
+
+  .cube {
+    position: relative;
+    width: var(--w);
+    height: var(--h);
+    transform-style: preserve-3d;
+  }
+  .cube i {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    background: var(--c);
+  }
+  .cube .face-f { transform: translateZ(calc(var(--d) / 2)); background: var(--c); }
+  .cube .face-b { transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); background: color-mix(in srgb, var(--c), black 30%); }
+  .cube .face-l { width: var(--d); height: var(--h); transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); background: color-mix(in srgb, var(--c), black 24%); }
+  .cube .face-r { width: var(--d); height: var(--h); transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); background: color-mix(in srgb, var(--c), black 12%); }
+  .cube .face-t { width: var(--w); height: var(--d); transform: rotateX(90deg) translateZ(calc(var(--h) / 2)); background: color-mix(in srgb, var(--c), white 14%); }
+  .cube .face-d { width: var(--w); height: var(--d); transform: rotateX(-90deg) translateZ(calc(var(--h) / 2)); background: color-mix(in srgb, var(--c), black 42%); }
+
+  .cube i > * { position: absolute; transform-style: preserve-3d; }
+
+  /* ---------- BuffCardUI: оверлей ---------- */
+
+  .overlay-stage .zone { z-index: 3; }
+
+  .dimmer {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 2;
+  }
+
+  .panel {
+    background: rgba(26,31,41,.94);
+    border: 1px solid rgba(89,102,128,.5);
+    border-radius: 22px;
+    box-shadow: 0 18px 26px rgba(0,0,0,.5), 0 6px 10px rgba(0,0,0,.4);
+    padding: 30px 36px 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .panel .p-title {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #f2f5fa;
+    margin: 0;
+    line-height: 1.1;
+  }
+  .panel .p-sub {
+    font-size: 17px;
+    color: rgba(184,199,224,.9);
+    margin: 0;
+  }
+  .panel .cards { display: flex; gap: 28px; }
+
+  .card {
+    width: 240px;
+    height: 320px;
+    background: #24293a;
+    border: 1px solid #474f5e;
+    border-radius: 14px;
+    box-shadow: 0 12px 16px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.35);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  .card .stripe { height: 8px; border-radius: 3px; }
+  .card .type {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    margin-top: 8px;
+  }
+  .card .title { font-size: 24px; font-weight: 700; color: #e6edf3; line-height: 1.2; }
+  .card .desc { flex: 1; font-size: 13px; color: #93a1b1; margin: 0; }
+
+  .green  { --card: #298c52; }
+  .red    { --card: #a6332e; }
+  .yellow { --card: #bf8c26; }
+  .green  .stripe, .red .stripe, .yellow .stripe { background: var(--card); }
+  .green  .type { color: var(--card); }
+  .red    .type { color: var(--card); }
+  .yellow .type { color: var(--card); }
+
+  /* мини-сцена за оверлеем */
+  .overlay-stage .back-bin { position: absolute; right: 8%; bottom: 16%; z-index: 1; opacity: .5; transform: scale(.38); transform-origin: 50% 100%; }
+  .overlay-stage .back-table { position: absolute; left: 6%; bottom: 8%; z-index: 1; opacity: .45; transform: scale(.32); transform-origin: 50% 100%; }
+
+  /* ---------- BuffCard: ряды карточек ---------- */
+
+  .cards-stage .zone { gap: 34px; align-items: center; }
+  .cards-stage .card { transform: translateY(-10px); }
+
+  /* ---------- paper: бумажка ---------- */
+
+  .paper-stage .paper-scene { position: relative; }
+  .paper-stage .papers {
+    display: flex;
+    gap: 74px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .paper {
+    position: relative;
+    width: 220px;
+    height: 124px;
+    border-radius: 6px;
+    background: linear-gradient(160deg, #ffffff 0%, #e7e9ee 70%, #d8dbe1 100%);
+    box-shadow: 0 18px 30px rgba(0,0,0,.5), 0 3px 4px rgba(0,0,0,.3);
+  }
+  .paper::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    border: 1px solid rgba(120,130,150,.35);
+  }
+  .paper .sq {
+    position: absolute;
+    right: 16px;
+    top: 46px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background: var(--type);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--type), transparent 30%), inset 0 0 0 1px rgba(255,255,255,.25);
+  }
+  .paper .st {
+    position: absolute;
+    left: 18px;
+    width: 108px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(120,125,138,.5);
+  }
+  .paper .st1 { top: 30px; }
+  .paper .st2 { top: 60px; }
+  .paper .st3 { top: 90px; }
+
+  .paper.tilt {
+    transform: perspective(900px) rotateX(56deg) rotateZ(-7deg);
+    transform-origin: 50% 80%;
+  }
+  .paper.tilt2 {
+    transform: perspective(900px) rotateX(56deg) rotateZ(9deg);
+    transform-origin: 50% 80%;
+  }
+
+  .paper.glowed { box-shadow: 0 18px 30px rgba(0,0,0,.5), 0 0 0 4px rgba(255,255,255,.85), 0 0 34px rgba(255,255,255,.4); }
+
+  .float-label {
+    font-family: var(--mono);
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+    -webkit-text-stroke: 9px rgba(0,0,0,.85);
+    paint-order: stroke fill;
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .float-label.plus {
+    color: #00b528;
+    font-size: 56px;
+    text-shadow: 0 8px 16px rgba(0,180,40,.35);
+  }
+  .float-label.count {
+    color: #ffffff;
+    font-size: 34px;
+  }
+
+  .paper-scene .lbl-plus { top: -58px; left: 50%; transform: translateX(-50%); }
+  .paper-scene .lbl-one { top: -20px; right: -46px; font-size: 30px; color: #fff; }
+
+  /* ---------- paper_storage: урна ---------- */
+
+  .bin-stage .world { transform: rotateX(-18deg) rotateY(-38deg) translateY(8px); }
+
+  .bin {
+    --w: 150px;
+    --h: 150px;
+    --d: 180px;
+    --c: #40454f;
+  }
+  .bin .interior {
+    position: absolute;
+    left: 0; top: 0;
+    width: var(--w);
+    height: var(--d);
+    background: #17191d;
+    transform: rotateX(90deg) translateZ(calc(var(--h) / 2 - 5px));
+  }
+
+  .bin .block {
+    left: 50%; top: 50%;
+    width: 52px; height: 52px;
+    border-radius: 3px;
+    background: var(--type);
+    transform: translate(-50%, -50%) translateZ(4px);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--type), transparent 40%);
+  }
+  .bin .block.side { width: 44px; height: 52px; }
+  .bin .face-t { overflow: visible; }
+
+  .bin .lid {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 148px;
+    height: 66px;
+    background: color-mix(in srgb, var(--c), black 8%);
+    border: 1px solid rgba(0,0,0,.35);
+  }
+  .bin .lid-f {
+    transform: translate(-50%, -50%) translate3d(0, calc(var(--h) / 2 + 8px), calc(var(--d) / 2 - 26px)) rotateX(-38deg);
+    transform-origin: 50% 0;
+  }
+  .bin .lid-b {
+    transform: translate(-50%, -50%) translate3d(0, calc(var(--h) / 2 + 8px), calc(-1 * var(--d) / 2 + 26px)) rotateX(38deg);
+    transform-origin: 50% 0;
+  }
+
+  /* ---------- paper_creating_table: стол ---------- */
+
+  .table-stage .world { transform: rotateX(-20deg) rotateY(-36deg); }
+
+  .table {
+    --w: 390px;
+    --h: 150px;
+    --d: 150px;
+    --c: #3c3c3c;
+  }
+
+  .cyl {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: var(--dia);
+    height: var(--len);
+    border-radius: calc(var(--dia) / 2);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--cyl), black 35%), var(--cyl) 38%, color-mix(in srgb, var(--cyl), white 18%) 55%, color-mix(in srgb, var(--cyl), black 30%));
+    border: 1px solid rgba(0,0,0,.35);
+  }
+  .cyl::before {
+    content: "";
+    position: absolute;
+    left: 50%; top: -2px;
+    transform: translateX(-50%);
+    width: calc(var(--dia) * .72);
+    height: calc(var(--dia) * .72);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--cyl), black 50%);
+    border: 1px solid rgba(0,0,0,.4);
+  }
+  .cyl.red { --cyl: #cf0000; }
+  .cyl.dark { --cyl: #1d1d1d; }
+  .cyl.tube {
+    --cyl: #9aa0aa;
+    opacity: .9;
+    border-color: rgba(0,0,0,.5);
+  }
+
+  .table .btn-base {
+    transform: translate(-50%, -50%) translate3d(120px, -78px, 0) rotateZ(90deg);
+    transform-origin: 50% 50%;
+  }
+  .table .btn-top {
+    transform: translate(-50%, -50%) translate3d(120px, -96px, 0) rotateZ(90deg);
+    transform-origin: 50% 50%;
+  }
+  .table .tube {
+    transform: translate(-50%, -50%) translate3d(-128px, -230px, 0) rotateZ(90deg);
+    transform-origin: 50% 50%;
+  }
+
+  .table .table-paper {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 118px;
+    height: 66px;
+    border-radius: 4px;
+    background: linear-gradient(160deg, #ffffff, #e7e9ee 75%);
+    transform: translate(-50%, -50%) translate3d(-30px, -80px, 8px) rotateX(0deg) rotateZ(14deg);
+    box-shadow: 0 6px 12px rgba(0,0,0,.45);
+  }
+  .table .table-paper .sq {
+    position: absolute;
+    right: 8px; top: 18px;
+    width: 16px; height: 16px;
+    border-radius: 2px;
+    background: var(--type-1);
+  }
+  .table .table-paper .st {
+    position: absolute;
+    left: 9px;
+    width: 56px; height: 2px;
+    border-radius: 1px;
+    background: rgba(120,125,138,.5);
+  }
+  .table .table-paper .st1 { top: 15px; }
+  .table .table-paper .st2 { top: 31px; }
+  .table .table-paper .st3 { top: 47px; }
+
+  footer {
+    margin-top: 56px;
+    font-size: 12.5px;
+    color: #6b7a8c;
+    border-top: 1px solid #1e2938;
+    padding-top: 18px;
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Префабы Nerdy Papers</h1>
+    <p>
+      Страница-каталог для скриншотов: каждый префаб отрисован на «игровом» тёмном фоне
+      со сценой и подсветкой, как в редакторе. Скринь отдельную секцию целиком —
+      и у тебя готовая картинка для иконки или баннера.
+    </p>
+    <span class="hint">Screenshot whole sections · PNG / cropped icons</span>
+  </header>
+
+  <!-- ================= BuffCardUI ================= -->
+  <section class="prefab" id="buff-card-ui">
+    <div class="caption">
+      <h2>Оверлей выбора карточки</h2>
+      <span class="file">Prefabs/BuffCardUI.tscn</span>
+      <span class="desc">CanvasLayer · Dimmer · Panel · 3 карточки</span>
+    </div>
+
+    <div class="stage overlay-stage">
+      <div class="floor"></div>
+      <div class="back-bin">
+        <div class="viewport"><div class="world">
+          <div class="cube bin" style="--type: var(--type-2);">
+            <i class="face-f"></i><i class="face-b"></i>
+            <i class="face-l"></i><i class="face-r"></i>
+            <i class="face-t"></i><i class="face-d"></i>
+            <div class="interior"></div>
+            <i class="face-f"><span class="block"></span></i>
+            <i class="face-b"><span class="block"></span></i>
+            <i class="face-l"><span class="block side"></span></i>
+            <i class="face-r"><span class="block side"></span></i>
+          </div>
+        </div></div>
+      </div>
+      <div class="back-table">
+        <div class="viewport"><div class="world">
+          <div class="cube table" style="--type: var(--type-1);">
+            <i class="face-f"></i><i class="face-b"></i>
+            <i class="face-l"></i><i class="face-r"></i>
+            <i class="face-t"></i><i class="face-d"></i>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="dimmer"></div>
+
+      <div class="zone">
+        <div class="panel">
+          <p class="p-title">CHOOSE A CARD</p>
+          <p class="p-sub">A buff helps, a debuff hurts</p>
+          <div class="cards">
+            <div class="card green">
+              <div class="stripe"></div>
+              <div class="type">BUFF</div>
+              <div class="title">Extra points</div>
+              <div class="desc">Each paper gives +1 extra point</div>
+            </div>
+            <div class="card red">
+              <div class="stripe"></div>
+              <div class="type">DEBUFF</div>
+              <div class="title">Speed Change</div>
+              <div class="desc">Takes 0.5 from movement speed</div>
+            </div>
+            <div class="card green">
+              <div class="stripe"></div>
+              <div class="type">BUFF</div>
+              <div class="title">Magnet</div>
+              <div class="desc">Papers are attracted to the correct bin</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vignette"></div>
+    </div>
+  </section>
+
+  <!-- ================= BuffCard ================= -->
+  <section class="prefab" id="buff-card">
+    <div class="caption">
+      <h2>Карточка баффа / дебаффа</h2>
+      <span class="file">Prefabs/BuffCard.tscn</span>
+      <span class="desc">Button · TopStripe · Type / Title / Desc</span>
+    </div>
+
+    <div class="stage cards-stage">
+      <div class="floor"></div>
+      <div class="zone">
+        <div class="card green">
+          <div class="stripe"></div>
+          <div class="type">BUFF</div>
+          <div class="title">Extra points</div>
+          <div class="desc">Each paper gives +1 extra point</div>
+        </div>
+        <div class="card red">
+          <div class="stripe"></div>
+          <div class="type">DEBUFF</div>
+          <div class="title">Speed Change</div>
+          <div class="desc">Takes 0.5 from movement speed</div>
+        </div>
+        <div class="card yellow">
+          <div class="stripe"></div>
+          <div class="type">RANDOM</div>
+          <div class="title">Mystery</div>
+          <div class="desc">Random effect — could be good or bad</div>
+        </div>
+      </div>
+      <div class="vignette"></div>
+    </div>
+  </section>
+
+  <!-- ================= paper ================= -->
+  <section class="prefab" id="paper">
+    <div class="caption">
+      <h2>Бумажка</h2>
+      <span class="file">Prefabs/paper.tscn</span>
+      <span class="desc">RigidBody3D · 4 типа · полоски + цветной квадрат</span>
+    </div>
+
+    <div class="stage paper-stage">
+      <div class="floor"></div>
+      <div class="zone">
+        <div class="paper-scene">
+          <div class="papers">
+            <div class="paper tilt" style="--type: var(--type-1);">
+              <div class="sq"></div>
+              <div class="st st1"></div><div class="st st2"></div><div class="st st3"></div>
+            </div>
+            <div class="paper tilt2 glowed" style="--type: var(--type-2);">
+              <div class="sq"></div>
+              <div class="st st1"></div><div class="st st2"></div><div class="st st3"></div>
+            </div>
+            <div class="paper tilt" style="--type: var(--type-3);">
+              <div class="sq"></div>
+              <div class="st st1"></div><div class="st st2"></div><div class="st st3"></div>
+            </div>
+          </div>
+          <div class="float-label plus lbl-plus">+1</div>
+          <div class="float-label count lbl-one">1</div>
+        </div>
+      </div>
+      <div class="vignette"></div>
+    </div>
+  </section>
+
+  <!-- ================= paper_storage ================= -->
+  <section class="prefab" id="paper-storage">
+    <div class="caption">
+      <h2>Урна</h2>
+      <span class="file">Prefabs/paper_storage.tscn</span>
+      <span class="desc">StaticBody3D · крышки · цветные блоки · CountLabel · +1</span>
+    </div>
+
+    <div class="stage bin-stage">
+      <div class="floor"></div>
+      <div class="zone">
+        <div class="viewport"><div class="world">
+          <div class="cube bin" style="--type: var(--type-2);">
+            <i class="face-f"></i><i class="face-b"></i>
+            <i class="face-l"></i><i class="face-r"></i>
+            <i class="face-t"></i><i class="face-d"></i>
+            <div class="interior"></div>
+            <i class="face-f"><span class="block"></span></i>
+            <i class="face-b"><span class="block"></span></i>
+            <i class="face-l"><span class="block side"></span></i>
+            <i class="face-r"><span class="block side"></span></i>
+            <div class="lid lid-f"></div>
+            <div class="lid lid-b"></div>
+          </div>
+        </div></div>
+        <div class="float-label count" style="top: 96px; left: 50%; transform: translateX(-50%);">0</div>
+        <div class="float-label plus" style="top: 34px; right: 25%;">+1</div>
+      </div>
+      <div class="vignette"></div>
+    </div>
+  </section>
+
+  <!-- ================= paper_creating_table ================= -->
+  <section class="prefab" id="paper-creating-table">
+    <div class="caption">
+      <h2>Стол-раздатчик</h2>
+      <span class="file">Prefabs/paper_creating_table.tscn</span>
+      <span class="desc">Table · Drop Tube · Button (red) · Paper Creator</span>
+    </div>
+
+    <div class="stage table-stage">
+      <div class="floor"></div>
+      <div class="zone">
+        <div class="viewport"><div class="world">
+          <div class="cube table" style="--type: var(--type-1);">
+            <i class="face-f"></i><i class="face-b"></i>
+            <i class="face-l"></i><i class="face-r"></i>
+            <i class="face-t"></i><i class="face-d"></i>
+            <div class="cyl dark btn-base" style="--dia: 90px; --len: 16px;"></div>
+            <div class="cyl red btn-top" style="--dia: 66px; --len: 18px;"></div>
+            <div class="cyl tube" style="--dia: 100px; --len: 190px;"></div>
+            <div class="table-paper">
+              <div class="sq"></div>
+              <div class="st st1"></div><div class="st st2"></div><div class="st st3"></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="vignette"></div>
+    </div>
+  </section>
+
+  <footer>
+    Nerdy Papers · doc/assets/index.html — префабы для скриншотов. Файлы сцен: Prefabs/*.tscn.
+  </footer>
+
+</div>
+</body>
+</html>

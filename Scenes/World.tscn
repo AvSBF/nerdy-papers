@@ -9,8 +9,8 @@
 [ext_resource type="PackedScene" uid="uid://crud2rvtp0ttd" path="res://Scenes/QuotaUI.tscn" id="7_y7y61"]
 [ext_resource type="Script" uid="uid://b2l86utljavna" path="res://Scripts/Round/round_controller.gd" id="8_q2d71"]
 [ext_resource type="PackedScene" uid="uid://cuxo5cfijmurj" path="res://Scenes/BuffUI.tscn" id="8_uo7di"]
-[ext_resource type="Shader" path="res://Shaders/pixelation.gdshader" id="9_pixshader"]
-[ext_resource type="Script" path="res://Scripts/UI/screen_effects.gd" id="10_pixscript"]
+[ext_resource type="Shader" uid="uid://bvt4485rqj1h6" path="res://Shaders/pixelation.gdshader" id="9_pixshader"]
+[ext_resource type="Script" uid="uid://ge06hmk86hkn" path="res://Scripts/UI/screen_effects.gd" id="10_pixscript"]
 [ext_resource type="PackedScene" path="res://Scenes/Menus.tscn" id="11_menus"]
 [ext_resource type="PackedScene" path="res://Prefabs/Borders.tscn" id="12_borders"]
 
@@ -29,15 +29,15 @@ fog_depth_end = 10.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pix"]
 shader = ExtResource("9_pixshader")
-shader_uniforms/pixel_size = 0.1
-shader_uniforms/grain_strength = 0.06
+shader_parameter/pixel_size = 0.1
+shader_parameter/grain_strength = 0.06
 
 [node name="World" type="Node3D" unique_id=533226924]
 
 [node name="Floor" type="Node3D" parent="." unique_id=1762117558]
 
 [node name="Floor" parent="Floor" unique_id=2001025901 instance=ExtResource("1_5cjrv")]
-transform = Transform3D(20, 0, 0, 0, 0.05, 0, 0, 0, 20, 0, 0, 0)
+transform = Transform3D(68, 0, 0, 0, 0.05, 0, 0, 0, 68, 0, 0, 0)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=771962969]
 environment = SubResource("Environment_mmoe8")
@@ -76,24 +76,24 @@ paper_type = 4
 
 [node name="BuffUi" parent="." unique_id=85365021 instance=ExtResource("8_uo7di")]
 
-[node name="ScreenEffects" type="CanvasLayer" parent="."]
+[node name="ScreenEffects" type="CanvasLayer" parent="." unique_id=8276007]
 layer = 0
 script = ExtResource("10_pixscript")
 
-[node name="EffectsRect" type="ColorRect" parent="ScreenEffects"]
+[node name="EffectsRect" type="ColorRect" parent="ScreenEffects" unique_id=2078796402]
+material = SubResource("ShaderMaterial_pix")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-material = SubResource("ShaderMaterial_pix")
 color = Color(0, 0, 0, 0)
 
 [node name="Round Controller" type="Node" parent="." unique_id=944369856 groups=["round_controller"]]
 script = ExtResource("8_q2d71")
 quota_growth_range = Vector2(1.5, 2.5)
 
-[node name="Menus" parent="." instance=ExtResource("11_menus")]
+[node name="Menus" parent="." unique_id=2027596602 instance=ExtResource("11_menus")]
 
-[node name="Borders" parent="." instance=ExtResource("12_borders")]
+[node name="Borders" parent="." unique_id=924596438 instance=ExtResource("12_borders")]
